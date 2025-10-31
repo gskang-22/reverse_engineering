@@ -1,0 +1,51 @@
+#!/bin/sh
+
+#add software interface
+vnetctl create_pon_vif 1 2 100 5 0 0
+sleep 2
+vnetctl create_lan_vif 1 2 100 0
+sleep 2
+vnetctl delete_vif_port 0 1
+sleep 2
+vnetctl delete_vif_port 0 2
+sleep 2
+vnetctl delete_vif_port 0 3
+sleep 2
+vnetctl delete_vif_port 0 4
+sleep 2
+vnetctl add_vif_port 1 1
+sleep 2
+vnetctl add_vif_port 1 2
+sleep 2
+vnetctl add_vif_port 1 3
+sleep 2
+vnetctl add_vif_port 1 4
+sleep 2
+
+#set hisi chip to do vlan action
+halmgr l2 create_bridge_wanitf 1 2 100 5
+sleep 2
+halmgr l2 add_bridge_port 1 1
+sleep 2
+halmgr l2 add_bridge_port 1 2
+sleep 2
+halmgr l2 add_bridge_port 1 3
+sleep 2
+halmgr l2 add_bridge_port 1 4
+sleep 2
+
+#let system software and wifi work with pon/lan
+ifconfig lan_100_0_0 0.0.0.0 up
+sleep 2
+brctl addif br0 lan_100_0_0
+sleep 2
+ifconfig pon_100_5_0 0.0.0.0 up
+sleep 2
+brctl addif br0 pon_100_5_0
+sleep 2
+ifconfig br0 up
+sleep 2
+
+#if ath0 have been include in br0, then don't include the next cmd
+#brctl addif br0 ath0
+

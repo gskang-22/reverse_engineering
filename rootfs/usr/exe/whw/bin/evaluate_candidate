@@ -1,0 +1,68 @@
+#!/bin/sh
+
+. functions
+
+post_script_after_healing(){
+
+	wifichip=`hcfgtool |grep "WIFI.0.SOLUTION" |awk -F ":" '{print $2}'`
+	if [  "$wifichip" == "BCM43217" -o "$wifichip" == "BCM43602" ];then 
+		`/bin/sh /usr/exe/whw/bin/monitor_wds_link.sh start ai_regen_wds&`
+	fi
+}
+
+if [ $# -eq 2 ]; then
+    active_radio="";
+    my_current_channel=0;
+    my_bw=0;
+    pom=$(get_bh_interface_name 5);
+    if [ $1 -lt 15 ]; then
+      pom=$(get_bh_interface_name 24);
+    fi
+
+    . functions
+   
+    for rint in $(ifconfig | grep "$pom" | grep -v ".v0 " | awk -F " " '{print $1}'); do
+      is_up=`wl -i $rint isup`;
+      is_ap_mode=`wl -i $rint ap`;
+      is_hidden=`wl -i $rint closed`;
+        
+      if [ "$is_up" == "1" -a "$is_ap_mode" == "1" ]; then
+        active_radio=$rint;
+        my_current_channel=$(get_current_channel $rint)
+		#`wl -i $rint channel | grep "mac channel" | awk -F " " '{printf "%d",$4}'`;
+        my_bw=`wl -i $rint status | grep Chanspec | awk -F " " '{gsub("MHz","",$5); print $5;}'`;
+        break;
+      fi
+    done
+    
+    if [ ! -z "$active_radio" ];then
+    #check if the partial dfs in in play
+     out_of_service=0;
+        is_dfs=0;
+      if [ $1 -gt 48 -a $1 -lt 145 ]; then 
+        is_dfs=1;
+        check_radar=`wl -i $active_radio chan_info | grep "Channel $1" | grep "Out of Service" | awk -F " " '{print $13}'`;
+         if [ ! -z "$check_radar" ]; then
+            out_of_service=1;
+            time_elapsed=$check_radar;
+          fi
+      fi
+
+#      if [ $out_of_service -eq 1 ]; then
+#        echo 0;
+#      else 
+       a=`sh /usr/exe/whw/bin/change-channel $active_radio $1 $2 2 $1 $2 2 0 1`;
+       post_script_after_healing
+       echo 1;
+       
+#      fi
+    else
+      echo 2;
+    fi
+
+  else 
+    echo 2;
+  fi
+
+     
+  

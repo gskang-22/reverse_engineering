@@ -1,0 +1,21 @@
+# meta extras
+# configuration for reset to default
+# per line per item, either file or folder with full path
+# the item listed would be removed while factory-default-reset
+# the content behind of # is comments in line
+/configs/config.cfg
+/configs/config.cfg.bak
+/configs/confignew.cfg
+/configs/confignew.cfg.bak
+/configs/config_encryption.cfg
+/configs/config_encryption.cfg.bak
+/configs/alcatel/config/ftpprofile_acspre.xml
+/configs/cfgmgr_cli_back.conf
+/configs/pwdchanged
+/configs/uplink
+/logs/configs_key_data_bak
+/flash/whw/edge_analytics
+/flash/whw/ai_engine
+/flash/whw/cma
+/flash/whw/boeng
+/flash/speedtest_history.json

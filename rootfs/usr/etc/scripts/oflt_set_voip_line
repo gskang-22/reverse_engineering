@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# voice line 
+/sbin/cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.DigitMapEnable true
+sleep 1
+/sbin/cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.DigitMap xxxxx
+sleep 1
+/sbin/cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.RegistrarServer $1
+sleep 1
+/sbin/cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.OutboundProxy $1
+sleep 1
+/sbin/cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.UserAgentDomain $1
+sleep 1
+/sbin/cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.X_CT-COM_HeartbeatSwitch true
+sleep 1
+/sbin/cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.1.Enable Enabled
+sleep 1
+/sbin/cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.1.SIP.AuthUserName $2
+sleep 1
+/sbin/cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.1.SIP.AuthPassword $2
+sleep 1
+/sbin/cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.1.SIP.URI $2
+sleep 1
+/sbin/cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.2.Enable Enabled
+sleep 1
+/sbin/cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.2.SIP.AuthUserName $3
+sleep 1
+/sbin/cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.2.SIP.AuthPassword $3
+sleep 1
+/sbin/cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.2.SIP.URI $3
+sleep 1

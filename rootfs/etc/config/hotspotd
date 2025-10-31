@@ -1,0 +1,406 @@
+### Main Section ###
+config 'main' 'main'
+
+## Device name
+# option 'devname' ''
+
+## Hotspot network interface (required)
+option 'iface' 'br_wpub'
+option 'iface_eap' 'br_weap'
+
+## IFB / IMQ network interface to use (required)
+## You may need to load a kernel module ifb or imq for this to work.
+option 'ifb'   'ifbr0'
+option 'ifb2'   'ifbr0'
+
+## Hotspot private network interface (required for certain functionalities)
+option 'iface_priv' 'eth1'
+
+## NAS-Identifier of the hotspot
+## Default: the mac-address of the hotspot interface.
+option 'nasid' ''
+
+## IPv4 and IPv6 address the hotspot should use on the hotspot interface
+## If set to an empty string or invalid value: Disables IPv4 support
+## If ommited: Try detecting the primary address.
+option 'ipv4' '1'
+option 'ipv6' 'false'
+
+## Milliseconds to wait after the interface is up before starting the hotspot.
+# option 'loader_delay' '2500'
+
+# Fon service 
+option 'enable' 'false'
+option 'deploy' 'false'
+
+## Radius attributes needed to be sent to Fon radius for WRIX-i compliance 
+## (only sent if set/present) and WISPR location
+# option 'location_id' ''
+option 'location_name' ''
+option 'venue_class' '0'
+option 'operator_name' ''
+option 'location_information' '' 
+option 'location_data' ''
+option 'basic_policy_rules' ''
+option 'extended_policy_rules' ''
+option 'location_capable' ''
+option 'requested_location_info' ''
+
+## Offset for custom routing tables to use
+## You only need to adjust this if you are using custom routing tables anywhere
+## else and the IDs might otheriwse clash.
+# option 'rttable_offset' '10000'
+
+option 'trigger_disconnect' ''
+
+#configured public ssid index
+option 'ssidindex' ''
+option 'ssid5index' ''
+
+### Client Section ###
+config 'client' 'client'
+
+## The maximum number of concurrent sessions
+## The current maximum and default for this is 250
+option 'limit' '32'
+
+# The maximum number of concurrent logged in sessions
+option 'logged_limit' '4'
+
+# The maximum number of managed session in platform
+option 'platform_limit' '6'
+
+## The default authentication and accounting backend to use (e.g. radius) 
+## The selected backends have to be builtin or loaded as a module.
+option 'auth' 'radius'
+option 'acct' 'radius'
+
+## Default idle time in seconds
+option 'idle_max' '600'
+
+## Client service interval in seconds
+## This determines how often client sessions are checked for being idle,
+## exceeding their time or traffic limits or being due for interim accounting.
+# option 'timer' '15'
+
+## Trigger run when a new user was successfully authenticated / an
+## authenticated user's session was terminated.
+# option 'trigger_newuser' ''
+# option 'trigger_deluser' ''
+
+
+
+### Captive section ###
+config 'redirect' 'redirect'
+
+## The redirect URL (uamserver)
+option 'url' ''
+
+## Redirect URL default template (must contain one %s for main.devname)
+option 'templateurl' 'https://%s.portal.fon.com'
+
+## The maximum number of concurrent pending redirects
+## This is to cap maximum memory usage.
+option 'maxconn' '32'
+
+## The TCP port to listen on
+# option 'port' '3989'
+
+
+
+### Portal section ###
+config 'portal' 'portal'
+
+## The shared secret of portal and uamserver
+option 'secret' ''
+
+## The maximum number of concurrent pending portal requests
+## This is to cap maximum memory usage.
+# option 'maxconn' '32'
+
+## The TCP port to listen on
+# option 'port' '3990'
+
+
+
+### Firewall Section ###
+config 'firewall' 'firewall'
+
+## Local connection limit (DOS protection)
+## The maximum number of NEW connections per second a single client
+## may open to a service on the hotspot itself (e.g. DHCP, DNS, Portal)
+## Range: 0-20, 0 disables connection limit
+option 'hammer_times' '20'
+
+## Allow unauthenticated clients to use any DNS server
+## Allows unauthenticated clients to contact any server on UDP port 53.
+# option 'anydns' '0'
+
+## List of accessible services on the hotspot
+## Space-separated list of ports on the hotspot a client may access.
+option 'services_udp' '53 67'
+# option 'services_tcp' ''
+
+
+
+config 'firewall_api' 'firewall_api'
+## Path to the iptables binary
+## This is usually auto-detected
+option 'iptables' '/bin/iptables'
+
+## Path to the ip6tables binary
+## This is usually auto-detected
+option 'ip6tables' '/bin/ip6tables'
+
+## Chain hooks
+## This allows to change the firewall chains hotspotd will hook.
+## hotspotd will always place its rules at the beginning of the chains. 
+# option 'ipv4_forward_chain' 'FORWARD'
+# option 'ipv6_forward_chain' 'FORWARD'
+# option 'ipv4_input_chain' 'INPUT'
+# option 'ipv6_input_chain' 'INPUT'
+# option 'ipv4_output_chain' 'OUTPUT'
+# option 'ipv6_output_chain' 'OUTPUT'
+# option 'ipv4_prerouting_chain' 'PREROUTING'
+# option 'ipv4_prerouting_chain' 'PREROUTING'
+# option 'ipv6_postrouting_chain' 'POSTROUTING'
+# option 'ipv6_postrouting_chain' 'POSTROUTING'
+
+
+
+### Traffic Control Section ###
+config 'traffic' 'traffic'
+
+## Overall traffic limits
+## Traffic is shared equally between all clients.
+## Limits are in kbit/s.
+option 'overall_kbit_in' '100000'
+option 'overall_kbit_out' '100000'
+
+## Enable Traffic shaping
+## This will categorize and prioritize traffic of a user and might improve
+## the usability of VoIP and similar kinds of traffic.
+## yes: enable shaping, no: disable shaping
+option 'shaping' 'yes'
+
+## Shaping traffic ratios
+## The linkshare ratios for the 3 traffic classes in percent.
+# option 'ratio_inter' '60'
+# option 'ratio_small' '30'
+# option 'ratio_bulk' '10'
+
+
+
+### Whitelist Section ###
+config 'whitelist' 'whitelist'
+
+## Timeout for whitelisting rules in seconds
+option 'timeout' '600'
+
+## Netfilter log group to use
+## This is usually auto-detected and should be left unset if unsure.
+# option 'nflogid' '0'
+
+## Authroitative DNS servers for whitelist DNS entries
+## WARNING: When using an external server make sure it is not possible to spoof
+## DNS replies with its source IP address otherwise the garden is compromised!
+## You should set up a local DNS resolver on the hotspot and leave this unset.
+# option 'dns_ipv4' ''
+# option 'dns_ipv6' ''
+
+## Static whitelist entries as FQDN or in CIDR notation
+# list 'static' 'www.martinvarsavsky.net'
+
+## Dynamic host whitelist entries as FQDN
+
+#list 'domain' '*.fon.com'
+#list 'domain' 'support.fon.com'
+#list 'domain' 'SVRSecure-G3-crl.verisign.com'
+#list 'domain' 'www.paypal.com'
+#list 'domain' 'mobile.paypal.com'
+#list 'domain' 'm.paypal.com'
+#list 'domain' 'www.paypalobjects.com'
+#list 'domain' 'safebrowsing.clients.google.com'
+#list 'domain' 'payment.fon.com'
+#list 'domain' 'www.mopay.com'
+#list 'domain' 'help.mopay.com'
+#list 'domain' 'static.mopay.com'
+#list 'domain' 'securepay.mopay.com'
+#list 'domain' 'stats.fon.com'
+#list 'domain' 'support.skype.com'
+#list 'domain' 'ocsp.usertrust.com'
+#list 'domain' 'static.fon.com'
+#list 'domain' 'conn.skype.com'
+#list 'domain' 'crl.comodoca.com'
+#list 'domain' 'ocsp.comodoca.com'
+#list 'domain' 'corp.fon.com'
+#list 'domain' 'fon.zendesk.com'
+list 'domain' 'crl.verisign.com'
+list 'domain' 'oscp.verisign.com'
+list 'domain' 'www.ibook.info'
+list 'domain' 'www.itools.info'
+list 'domain' 'www.thinkdifferent.us'
+list 'domain' 'www.airport.us'
+list 'domain' 'www.apple.com'
+list 'domain' 'captive.apple.com'
+list 'domain' 'www.appleiphonecell.com'
+#list 'static' '31.25.212.41'
+#list 'static' '31.25.208.1'
+#list 'static' 'graph.facebook.com'
+#list 'static' 'static.ak.fbcdn.net'
+#list 'static' 'www.facebook.com'
+#list 'static' 'm.facebook.com'
+#list 'static' 'fbstatic-a.akamaihd.net'
+#list 'static' 'fbcdn-profile-a.akamaihd.net'
+#list 'static' 'crp.service.fon.com'
+#list 'static' 'gamma1.purchases.fon.com'
+#list 'static' 'gamma1.portal.fon.com'
+#list 'static' '213.134.44.0/23'
+#list 'static' 'www.paypal.com'
+#list 'static' 'www.paypalobjects.com'
+#list 'static' '188.121.36.239'
+#list 'static' 'paypal.112.2o7.net'
+
+## Dynamic zone whitelist entries as FQDN
+#list 'domain' '*.fon.com'
+
+## Dynamic excluding whitelist entries as FQDN
+list 'domain' '!wifi.fon.com'
+
+
+
+### Radius Authentication Backend Section (extension radius) ###
+config 'radauth' 'radauth'
+
+## Listof RADIUS servers to try
+list 'server' '31.25.211.162:1812'
+list 'server' '31.25.211.162:1812'
+
+## List of RADIUS server default templates. Must contain one %s for main.devname
+list 'templateserver' 'a.%s.ra.fon.com'
+list 'templateserver' 'b.%s.ra.fon.com'
+
+## RADIUS server port
+option 'port' '1812'
+
+## Shared RADIUS secret
+option 'secret' 'garrafon'
+
+## RADIUS retry settings
+## Tries to send a RADIUS message, seconds to wait before resending
+## and the interval of resends at which to try the next RADIUS server.
+# option 'tries_max' '4'
+# option 'tries_time' '7'
+# option 'tries_server' '1'
+
+
+
+### Radius Accounting Backend Section (extension radius) ###
+config 'radacct' 'radacct'
+
+## Listof RADIUS servers to try
+list 'server' '31.25.211.162:1813'
+list 'server' '31.25.211.162:1813'
+
+## List of RADIUS server default templates. Must contain one %s for main.devname
+list 'templateserver' 'a.%s.ra.fon.com'
+list 'templateserver' 'b.%s.ra.fon.com'
+
+## RADIUS server port
+option 'port' '1813'
+
+## Shared RADIUS secret
+option 'secret' 'garrafon'
+
+## RADIUS retry settings
+## Tries to send a RADIUS message, seconds to wait before resending
+## and the interval of resends at which to try the next RADIUS server.
+# option 'tries_max' '4'
+# option 'tries_time' '7'
+# option 'tries_server' '1'
+
+
+config 'radeapauth' 'radeapauth'
+
+list 'server' 'a.fonsof02.eap.fon.com:1812'
+list 'server' 'b.fonsof02.eap.fon.com:1812'
+# list 'server' ''
+
+# option 'next' 'ppp'
+option 'port' '1812'
+option 'secret' 'garrafon'
+
+
+
+### Tunnel Section (extension tunnel) ###
+config 'tunnel' 'tunnel'
+option type 'l2tp'
+list templateserver 'a.%s.lns.fon.com'
+list templateserver 'b.%s.lns.fon.com'
+option pppd_timeout '0'
+option l2tp_hello_delay '0'
+option l2tp_max_retry '0'
+option l2tp_rtx_delay '0'
+option l2tp_start_max_retry '0'
+option l2tp_start_rtx_delay '0'
+option lcp_echo_interval '0'
+option lcp_echo_failure '0'
+option enabled 'false'
+option fallback 'false'
+list server ''
+
+
+## Tunnel Backend
+## Currently only none: disabled, l2tp: l2tp-backend are supported
+#option 'enabled' 'false'
+#option 'fallback' 'false'
+
+#option 'type' 'l2tp'
+
+## List of tunnel servers
+# list 'server' 'tunnel02.example.com'
+
+## List of tunnel server default templates. Must contain one %s for main.devname
+#list 'templateserver' 'a.%s.lns.fon.com'
+#list 'templateserver' 'b.%s.lns.fon.com'
+
+## Timeout in seconds to wait for PPP establishing a new connection
+#option 'pppd_timeout' '15'
+
+## First PPP interface ID (pppd option unit) to use
+# option 'pppd_offset' '10000'
+
+## L2TP-Backend Options ##
+## Interval for hello keep-alive messages in seconds
+#option 'l2tp_hello_delay' '30'
+
+## Retry Settings
+## Maximum number of retries per message and delay in seconds between retries
+## for all messages and customizable for initial start handshake.
+#option 'l2tp_max_retry' '3'
+#option 'l2tp_rtx_delay' '30'
+#option 'l2tp_start_max_retry' '3'
+#option 'l2tp_start_rtx_delay' '1'
+
+#option 'lcp_echo_interval' '600'
+#option 'lcp_echo_failure' '2'
+
+
+
+config 'eapradserv' 'eapradserv'
+option 'eapstatus' 'off'
+
+
+
+config 'tunnel_api' 'tunnel_api'
+## Path to pppd executable (usually auto-detected)
+# option 'pppd_path' ''
+
+## Path to an additional pppd configuration file
+option 'pppd_config' '/etc/hotspotd.pppd'
+
+
+
+config 'trigger' 'trigger'
+option 'hotspot_online' '/sbin/hotspot-up'
+option 'hotspot_offline' '/sbin/hotspot-down'

@@ -1,0 +1,47 @@
+#!/bin/sh
+
+if [ $# -eq 2 ]; then
+    active_5g_radio="";
+    my_current_channel=0;
+    my_bw=0;
+
+    . functions
+   
+    for rint in $(ifconfig | grep $(get_bh_interface_name 5) | grep -v ".v0 " | awk -F " " '{print $1}'); do
+      is_up=`wl -i $rint isup`;
+      is_ap_mode=`wl -i $rint ap`;
+      is_hidden=`wl -i $rint closed`;
+        
+      if [ "$is_up" == "1" -a "$is_ap_mode" == "1" ]; then
+        active_5g_radio=$rint;
+        my_current_channel=$(get_current_channel $rint)
+		#`wl -i $rint channel | grep "mac channel" | awk -F " " '{printf "%d",$4}'`;
+        my_bw=$(get_current_bw $rint)
+		#`wl -i $rint status | grep Chanspec | awk -F " " '{gsub("MHz","",$5); print $5;}'`;
+        break;
+      fi
+    done
+    
+    if [ ! -z "$active_5g_radio" ];then
+      if [ "$my_current_channel" == "$1" -a "$my_bw" != "$2" ]; then
+     
+        start_time=$( date +%s);
+        time_connection=0;
+        period_connection=5;
+ 
+        until [ "$my_bw" == "$2" ] ||  [ $time_connection -gt $period_connection ]; do
+        
+          wl -i $active_5g_radio csa 1 5 "$my_current_channel"/"$2"
+
+          time_connection=$( date +%s);
+          time_connection=$((time_connection - start_time)); 
+          my_bw=`wl -i $active_5g_radio status | grep Chanspec | awk -F " " '{gsub("MHz","",$5); print $5;}'`; 
+       done;
+        
+      fi
+    fi
+
+  fi
+
+     
+  

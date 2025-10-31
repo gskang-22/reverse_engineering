@@ -1,0 +1,417 @@
+# Load bcm drivers
+load_bcm_drivers() {
+  test -e /bcm/bin/wlcsm.ko && insmod /bcm/bin/wlcsm.ko  >/dev/null
+  mnemonic=$(ritool get Mnemonic|cut -d: -f2)
+  if [ "${mnemonic}" = "HA-020W-B" -o "${mnemonic}" = "HA-030W-B" ]; then 
+  test -e /bcm/bin/bcm_pcie_hcd.ko && insmod /bcm/bin/bcm_pcie_hcd.ko pcie_boot_order=0x01 >/dev/null
+  fi
+  test -e /bcm/bin/bdmf.ko && insmod /bcm/bin/bdmf.ko bdmf_chrdev_major=215 bdmf_global_trace_level=2 >/dev/null
+  test -e /bcm/bin/rdpa_gpl.ko && insmod /bcm/bin/rdpa_gpl.ko  >/dev/null
+  test -e /bcm/bin/rdpa_gpl_ext.ko && insmod /bcm/bin/rdpa_gpl_ext.ko >/dev/null 
+  test -e /bcm/bin/rdpa.ko && insmod /bcm/bin/rdpa.ko >/dev/null
+  
+  mnemonic=$(ritool get Mnemonic|cut -d: -f2)
+  if [ "${mnemonic}" = "HA-020W-B" ]; then 
+  test -e /bcm/bin/pktflow.ko && insmod /bcm/bin/pktflow.ko MaxFlowEntries=8192 >/dev/null
+  fcctl config --defer 10
+  else
+  test -e /bcm/bin/pktflow.ko && insmod /bcm/bin/pktflow.ko >/dev/null 
+  fi
+  
+  test -e /bcm/bin/bcm_bpm.ko && insmod /bcm/bin/bcm_bpm.ko >/dev/null
+  test -e $KER_MOD_DIR/usblp.ko && insmod $KER_MOD_DIR/usblp.ko
+
+  # ALU02330093 support ip class method configurable. fangzheng@2017.02.14
+  # value: "NONE", "FC", "MIXED"
+  operator_id=$(/sbin/ritool get OperatorID |grep OperatorID |awk '{print substr($2,12)}')
+  if [ "$operator_id" = "XXXX" ]; then
+      test -e /bcm/bin/rdpa_mw.ko && insmod /bcm/bin/rdpa_mw.ko parm_pon_mode="gbe" parm_ip_class_method="NONE" >/dev/null
+  else
+      test -e /bcm/bin/rdpa_mw.ko && insmod /bcm/bin/rdpa_mw.ko parm_pon_mode="gbe" parm_ip_class_method="FC" >/dev/null
+  fi
+
+  test -e /bcm/bin/bcm_enet.ko && insmod /bcm/bin/bcm_enet.ko >/dev/null
+  test -e /bcm/bin/bcmvlan.ko && insmod /bcm/bin/bcmvlan.ko >/dev/null
+}
+
+load_rm_drv(){
+  insmod /lib/driver/dp_rm.ko dp_rm_dev_major=234
+  rm -f /dev/dp_rm 2>&1
+  mknod /dev/dp_rm c 234 0
+}
+
+# Load bridge fast-path module
+load_br_fp() {
+  test -e /bcm/bin/rdpa_mw.ko && insmod /bcm/bin/rdpa_mw.ko
+  test -e /bcm/bin/bcmbrfp.ko && insmod /bcm/bin/bcmbrfp.ko
+}
+
+# Load flow cache module
+load_flow_cache() {
+  test -e /bcm/bin/pktrunner.ko && insmod /bcm/bin/pktrunner.ko
+}
+
+# Load bcm ioctl driver
+load_bcmioctl_driver() {
+  DPROBE=modprobe
+  device=bcmdrv
+  module="BCM device driver"
+
+  test -e /bcm/bin/bcmdrv.ko && insmod /bcm/bin/bcmdrv.ko
+
+  rm -f /dev/${device} 2>&1
+  major=10
+  minor=`cat /proc/misc | grep "${module}" | sed -e 's/^[^0-9]*//' | cut -d " " -f 1`
+  mknod /dev/${device} c $major $minor
+  group="root"
+  mode="664"
+  chgrp $group /dev/${device}
+  chmod $mode /dev/${device}
+}
+
+# Load loop detect
+load_klpd_driver() {
+  test -e /lib/driver/klpd.ko && insmod /lib/driver/klpd.ko
+}
+# Load dhcp driver
+load_dhcp_driver() {
+  test -e /bcm/bin/dhcpdrv.ko && insmod /bcm/bin/dhcpdrv.ko
+}
+
+# Load iptv stat driver
+load_iptv_stat_driver() {
+  test -e /bcm/bin/iptvstats.ko && insmod /bcm/bin/iptvstats.ko
+}
+
+# Load dpi detect
+load_dpi_driver() {
+  test -e /lib/driver/dpi_conntrackfc.ko && insmod /lib/driver/dpi_conntrackfc.ko
+}
+
+# Initialize bdmf shell
+init_bdmf_shell() {
+  bdmf_shell -c init | while read a b ; do echo $b ; done > /var/bdmf_sh_id
+  bs /b/trace error
+  echo 4 > /proc/sys/kernel/printk
+}
+
+# Initialize system
+init_system() {
+#  bs /bdmf/new system/init_cfg={wan_type=gpon,emac_mode={group_mode=qsgmii,emac4_mode=rgmii,emac5_mode=sgmii},num_lan=5,enabled_emac=emac0+emac1+emac2+emac3+emac4,switching_mode=none,ip_class_method=mixed},cfg={car_mode=no,mtu_size=1990}
+  bs /bdmf/configure system cfg={headroom_size=40,inner_tpid=8100,outer_tpid=8100,add_always_tpid=0x8100}
+  bs /bdmf/configure system tpid_detect[0x9100]={val_udef=0x0,otag_enabled=yes,itag_enabled=yes}
+  bs /bdmf/configure system tpid_detect[0x9200]={val_udef=0x0,otag_enabled=yes,itag_enabled=yes}
+
+  bs /bdmf/configure system cpu_reason_to_tc[tcp_flags]=1
+  # for 3 tags ip_class
+  bs /b/c system tpid_detect[0x8100]={triple_enabled=yes}
+
+  #ALU02331039 upstream traffic is dropped because too many fragments
+  sw 0x80168210 0x34
+}
+
+# Initialize gpon
+init_gpon() {
+  bs /bdmf/new gpon  >/dev/null 2>&1
+  bs /bdmf/configure gpon link_cfg={to1_timeout=2000,dv_polarity=active_high}   >/dev/null 2>&1
+  # Create default gem flow for traffic discard
+  #bs /b/n gem/index=255,gem_port=65535
+}
+
+lan_ports=
+wlan_ports=
+wan_ports=
+
+get_ports() {
+  lan_ports=`bs /b/o port | grep -o "=lan." | grep -o "lan." | xargs`
+  wlan_ports=`bs /b/o port | grep -o "wlan." | xargs`
+  wan_ports=`bs /b/o port | grep -o "wan." | xargs`
+}
+
+# Initialize port
+# Drop lan0 - lan3, cpu_reason unknown_sa packet, re-enable in enet after board is ready for traffic.
+init_port() {
+  echo ""
+  #bs /bdmf/new port/index=lan0,cfg={emac=emac0,sal_miss_action=drop,dal_miss_action=forward},emac_cfg={emac_param={rx_flow_control=yes}}  >/dev/null 2>&1
+  #bs /bdmf/new port/index=lan1,cfg={emac=emac1,sal_miss_action=drop,dal_miss_action=forward},emac_cfg={emac_param={rx_flow_control=yes}}  >/dev/null 2>&1
+  #bs /bdmf/new port/index=lan2,cfg={emac=emac2,sal_miss_action=drop,dal_miss_action=forward},emac_cfg={emac_param={rx_flow_control=yes}}  >/dev/null 2>&1
+  #bs /bdmf/new port/index=lan3,cfg={emac=emac3,sal_miss_action=drop,dal_miss_action=forward},emac_cfg={emac_param={rx_flow_control=yes}}  >/dev/null 2>&1
+  bs /bdmf/configure port/index=wan0 cfg={sal=no}
+  bs /bdmf/configure port/index=wan0 cfg={ls_fc_enable=yes}
+  #bs /bdmf/new port/index=wan0 gpon  >/dev/null 2>&1
+# bs /bdmf/new port/index=wlan0  >/dev/null 2>&1
+
+  get_ports
+  for port in $lan_ports; do
+    bs /b/c port/index=$port cfg={ls_fc_enable=yes}
+  done
+}
+
+# Initialize DS TM
+config_ds_egressTm() {
+  bs /b/n egress_tm/dir=ds,index=1,level=queue,mode=sp
+  bs /b/c egress_tm/dir=ds,index=1 queue_cfg[0]={queue_id=3,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=ds,index=1 queue_cfg[1]={queue_id=2,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=ds,index=1 queue_cfg[2]={queue_id=1,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=ds,index=1 queue_cfg[3]={queue_id=0,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c port/index=lan1 tm_cfg={egress_tm={egress_tm/dir=ds,index=1}}
+
+  bs /b/n egress_tm/dir=ds,index=2,level=queue,mode=sp
+  bs /b/c egress_tm/dir=ds,index=2 queue_cfg[0]={queue_id=3,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=ds,index=2 queue_cfg[1]={queue_id=2,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=ds,index=2 queue_cfg[2]={queue_id=1,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=ds,index=2 queue_cfg[3]={queue_id=0,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c port/index=lan2 tm_cfg={egress_tm={egress_tm/dir=ds,index=2}}
+
+  bs /b/n egress_tm/dir=ds,index=3,level=queue,mode=sp
+  bs /b/c egress_tm/dir=ds,index=3 queue_cfg[0]={queue_id=3,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=ds,index=3 queue_cfg[1]={queue_id=2,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=ds,index=3 queue_cfg[2]={queue_id=1,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=ds,index=3 queue_cfg[3]={queue_id=0,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c port/index=lan3 tm_cfg={egress_tm={egress_tm/dir=ds,index=3}}
+
+  bs /b/c egress_tm/dir=us,index=0 queue_cfg[7]={queue_id=8}
+  bs /b/c egress_tm/dir=us,index=0 queue_cfg[6]={queue_id=9}
+  bs /b/c egress_tm/dir=us,index=0 queue_cfg[5]={queue_id=10}
+  bs /b/c egress_tm/dir=us,index=0 queue_cfg[4]={queue_id=11}
+
+  bs /b/c egress_tm/dir=us,index=0 queue_cfg[0]={queue_id=7,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=us,index=0 queue_cfg[1]={queue_id=6,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=us,index=0 queue_cfg[2]={queue_id=5,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=us,index=0 queue_cfg[3]={queue_id=4,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=us,index=0 queue_cfg[4]={queue_id=3,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=us,index=0 queue_cfg[5]={queue_id=2,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=us,index=0 queue_cfg[6]={queue_id=1,drop_threshold=811968,weight=0,drop_alg=dt}
+  bs /b/c egress_tm/dir=us,index=0 queue_cfg[7]={queue_id=0,drop_threshold=811968,weight=0,drop_alg=dt}
+
+  bs /bdmf/new tc_to_queue/dir=ds,table=1
+  bs /bdmf/c tc_to_queue/dir=ds,table=1 tc_map[0]=0
+  bs /bdmf/c tc_to_queue/dir=ds,table=1 tc_map[1]=0
+  bs /bdmf/c tc_to_queue/dir=ds,table=1 tc_map[2]=1
+  bs /bdmf/c tc_to_queue/dir=ds,table=1 tc_map[3]=1
+  bs /bdmf/c tc_to_queue/dir=ds,table=1 tc_map[4]=2
+  bs /bdmf/c tc_to_queue/dir=ds,table=1 tc_map[5]=2
+  bs /bdmf/c tc_to_queue/dir=ds,table=1 tc_map[6]=3
+  bs /bdmf/c tc_to_queue/dir=ds,table=1 tc_map[7]=3
+  bs /bdmf/link tc_to_queue/dir=ds,table=1 port/index=lan1
+
+  bs /bdmf/new tc_to_queue/dir=ds,table=2
+  bs /bdmf/c tc_to_queue/dir=ds,table=2 tc_map[0]=0
+  bs /bdmf/c tc_to_queue/dir=ds,table=2 tc_map[1]=0
+  bs /bdmf/c tc_to_queue/dir=ds,table=2 tc_map[2]=1
+  bs /bdmf/c tc_to_queue/dir=ds,table=2 tc_map[3]=1
+  bs /bdmf/c tc_to_queue/dir=ds,table=2 tc_map[4]=2
+  bs /bdmf/c tc_to_queue/dir=ds,table=2 tc_map[5]=2
+  bs /bdmf/c tc_to_queue/dir=ds,table=2 tc_map[6]=3
+  bs /bdmf/c tc_to_queue/dir=ds,table=2 tc_map[7]=3
+  bs /bdmf/link tc_to_queue/dir=ds,table=2 port/index=lan2
+
+  bs /bdmf/new tc_to_queue/dir=ds,table=3              
+  bs /bdmf/c tc_to_queue/dir=ds,table=3 tc_map[0]=0    
+  bs /bdmf/c tc_to_queue/dir=ds,table=3 tc_map[1]=0    
+  bs /bdmf/c tc_to_queue/dir=ds,table=3 tc_map[2]=1    
+  bs /bdmf/c tc_to_queue/dir=ds,table=3 tc_map[3]=1    
+  bs /bdmf/c tc_to_queue/dir=ds,table=3 tc_map[4]=2    
+  bs /bdmf/c tc_to_queue/dir=ds,table=3 tc_map[5]=2    
+  bs /bdmf/c tc_to_queue/dir=ds,table=3 tc_map[6]=3    
+  bs /bdmf/c tc_to_queue/dir=ds,table=3 tc_map[7]=3    
+  bs /bdmf/link tc_to_queue/dir=ds,table=3 port/index=lan3
+  
+  ebtables -L
+}
+
+#reset_ds_tm: remove sdk auto created tm for ds
+reset_ds_tm() {
+  bs /b/d egress_tm/dir=ds,index=0  > /dev/null 2>&1
+  bs /b/d egress_tm/dir=ds,index=1  > /dev/null 2>&1
+  bs /b/d egress_tm/dir=ds,index=2  > /dev/null 2>&1
+  bs /b/d egress_tm/dir=ds,index=3  > /dev/null 2>&1
+  bs /b/d egress_tm/dir=ds,index=4  > /dev/null 2>&1
+
+}
+
+# Config cpu rxq_size of wlan
+config_wlan_cpu_rxq_size() {
+  bs /b/c cpu/index=wlan0 rxq_cfg[2]={size=2048}
+}
+
+# Initialize CPU
+init_cpu() {
+  # Configure CPU queue 0 for debugging purposes
+  # Giving 0 (=NULL) for callback will let us to read packets from the queueu manually from shell.
+  bs /bdmf/configure cpu/index=host rxq_cfg[0]={rx_isr=0,sysb_type=skb,size=128,dump_data=no,isr_priv=0}
+}
+
+# Initialize Bridge
+init_bridge() {
+  bs /bdmf/new bridge/index=0,config={type=802_1d,auto_forward=yes,auto_aggregate=yes}
+
+  get_ports
+  for port in $lan_ports; do
+    bs /bdmf/link port/index=$port bridge/index=0
+  done
+
+  for port in $wlan_ports; do
+    bs /bdmf/link port/index=$port bridge/index=0 >/dev/null
+  done
+}
+
+common_filter_types="dhcp igmp mld icmpv6 etype_pppoe_d etype_arp etype_802_1x bcast ip_frag"
+
+lan_filter_types=$common_filter_types
+wlan_filter_types=$common_filter_types
+
+#only care cfm from wan;
+wan_filter_types=$common_filter_types
+
+#Initialize filter
+init_filter() {
+  bs /bdmf/new filter  >/dev/null 2>&1
+  bs /bdmf/configure filter etype_udef[1]=0x886c
+  bs /bdmf/configure filter etype_udef[2]=0xfffa
+  bs /bdmf/configure filter etype_udef[3]=0xc0c0
+  wlan_filter_types="$common_filter_types etype_udef_1 etype_udef_3"
+  lan_filter_types="$common_filter_types etype_udef_2 etype_udef_3"
+  wan_filter_types="$common_filter_types etype_udef_3"
+
+  bs /b/c system cpu_reason_to_tc[etype_udef_3]=1
+
+  get_ports
+  for port in $lan_ports; do
+    for reason in $lan_filter_types; do
+      bs /bdmf/configure port/index=$port ingress_filter[$reason]={enabled=yes,action=host}
+    done
+  done
+
+  for port in $wlan_ports; do
+    for reason in $wlan_filter_types; do
+      bs /bdmf/configure port/index=$port ingress_filter[$reason]={enabled=yes,action=host}
+    done
+  done
+
+  for port in $wan_ports; do
+    for reason in $wan_filter_types; do
+      bs /bdmf/configure port/index=$port ingress_filter[$reason]={enabled=yes,action=host}
+    done
+  done
+
+}
+
+#Initialize iptv
+init_iptv() {
+  bs /bdmf/new iptv  >/dev/null 2>&1
+  bs /bdmf/configure iptv mcast_prefix_filter=mac >/dev/null
+}
+
+# Initialize linux interface
+init_linux_if() {
+  ifconfig lo up
+  echo "1" > /proc/sys/net/ipv4/ip_forward
+  echo "1" > /proc/sys/net/ipv6/conf/all/forwarding
+  echo '16000' > /proc/sys/net/nf_conntrack_max
+}
+
+# Initialize linux bridge
+init_linux_bridge() {
+  brctl addbr br0 >/dev/null 
+  MAC_ADDR=$(/sbin/ritool get MACAddress |grep MACAddress |awk '{print substr($2,12,17)}')
+  ip link set br0 up address ${MAC_ADDR} >/dev/null 2>&1
+}
+
+# set linux bridge
+set_linux_bridge() {
+  ip addr add 192.168.1.1/24 dev br0
+  ip -6 addr add fe80::1/64 dev br0
+
+  #copy from R1.x, for ip6 only dns response to PC
+  sleep 1
+
+  ip -6 route add fe80::/64 dev br0 metric 100
+  ip -6 route del fe80::/64 dev br0 metric 256
+
+  ip link set dev br0 up address `ritool get MACAddress | cut -c16-`
+  ip addr add 192.168.1.1/24 dev br0
+}
+
+load_igmp_module()
+{
+  #for igmp snooping
+  insmod /bcm/bin/kigmp.ko
+  rm -f /dev/igmpdrv 2>&1
+  mknod /dev/igmpdrv c 75 2
+  #echo "0" > /sys/devices/virtual/net/br0/bridge/multicast_snooping
+}
+
+init_linux_module()
+{
+  depmod
+}
+
+#hongchez+ 20131017
+init_wlan_module()
+{
+  wifinum=$(/usr/exe/hcfgtool get WIFI.NUMS)
+  if [ $wifinum -gt 0 ]; then
+    wifitype=$(/usr/exe/hcfgtool get WIFI.0.SOLUTION)$(/usr/exe/hcfgtool get WIFI.1.SOLUTION)
+      if [ "$wifitype" == "BCM4331QTN11AC" -o "$wifitype" == "QTN11ACBCM4331" ]; then
+      #bcm4331 map bin
+      test -d /configs/bcm4331/ && echo "/configs/bcm4331/ dir exists" || mkdir -p /configs/bcm4331/
+      test -s /configs/bcm4331/bcm4331_vars.bin && echo "bcm4331_vars.bin exists" || cp -f /bcm/bin/bcm4331_vars.bin /configs/bcm4331/
+      #3FE56756BAAA for 500mw,others is 100mw
+      partnum=$(/sbin/ritool get PartNumber |grep PartNumber |awk '{print substr($2,12)}')
+      if [ "$partnum" == "3FE56756BAAA" ]; then
+        test -s /configs/bcm4331/bcm4331_vars.bin && echo "bcm4331_vars.bin of 3FE56756BAAA exists" || cp -f /bcm/bin/bcm4331_vars.bin /configs/bcm4331/bcm4331_vars.bin
+      else
+        #for 100mw setting
+        test -s /configs/bcm4331/bcm4331_vars.bin && echo "bcm4331_vars.bin of other partnum exists" || cp -f /bcm/bin/bcm4331_vars_100mw.bin /configs/bcm4331/bcm4331_vars.bin
+      fi
+
+      #link qcsapi_target_ip.conf for Quantenna
+      test -s /configs/qcsapi_target_ip.conf || cp -f /usr/configs/qcsapi_target_ip.conf /configs/qcsapi_target_ip.conf
+      ln -s /configs/qcsapi_target_ip.conf /configs/etc/qcsapi_target_ip.conf
+
+      # egress_tm for RGMII-connected wifi chip.
+      bs /bdmf/new egress_tm/dir=ds,index=6,level=queue,mode=sp port/index=lan4
+      bs /bdmf/configure egress_tm/dir=ds,index=6 queue_cfg[0]={queue_id=0,weight=0,drop_alg=dt,drop_threshold=192}
+      bs /bdmf/configure egress_tm/dir=ds,index=6 queue_cfg[1]={queue_id=1,weight=0,drop_alg=dt,drop_threshold=192}
+      bs /bdmf/configure egress_tm/dir=ds,index=6 queue_cfg[2]={queue_id=2,weight=0,drop_alg=dt,drop_threshold=192}
+      bs /bdmf/configure egress_tm/dir=ds,index=6 queue_cfg[3]={queue_id=3,weight=0,drop_alg=dt,drop_threshold=192}
+      bs /bdmf/configure egress_tm/dir=ds,index=6 queue_cfg[4]={queue_id=4,weight=0,drop_alg=dt,drop_threshold=192}
+      bs /bdmf/configure egress_tm/dir=ds,index=6 queue_cfg[5]={queue_id=5,weight=0,drop_alg=dt,drop_threshold=192}
+      bs /bdmf/configure egress_tm/dir=ds,index=6 queue_cfg[6]={queue_id=6,weight=0,drop_alg=dt,drop_threshold=192}
+      bs /bdmf/configure egress_tm/dir=ds,index=6 queue_cfg[7]={queue_id=7,weight=0,drop_alg=dt,drop_threshold=192}
+      ifconfig eth4 up
+    fi
+
+    if [ "$wifitype" == "BCM43217KMLG" -o "$wifitype" == "KMLGBCM43217" ]; then
+      #bcm43217 map bin
+      test -d /configs/bcm43217/ && echo "/configs/bcm43217/ dir exists" || mkdir -p /configs/bcm43217/
+      test -s /configs/bcm43217/bcm43217_map.bin && echo "bcm43217_map.bin exists" || cp -f /bcm/bin/bcm43217_map.bin /configs/bcm43217/
+      test -s /configs/bcm43217/bcmcmn_nvramvars.bin && echo "bcmcmn_nvramvars.bin exists" || cp -f /bcm/bin/bcmcmn_nvramvars.bin /configs/bcm43217/
+    fi
+
+    test -s /bcm/bin/wl.ko && insmod /bcm/bin/wl.ko || echo "/bcm/bin/wl.ko not exist"
+    test -s /bcm/bin/wfd.ko && insmod /bcm/bin/wfd.ko || echo "/bcm/bin/wfd.ko not exist"
+    ifconfig wl0 up
+  fi
+}
+
+add_omci_ssh_user()
+{
+  if [ ! -d /etc/home ]; then
+    mkdir -p /etc/home
+    chmod g+w /etc/home
+  fi
+
+  if [ ! -d /etc/home/ONTUSER ]; then
+    mkdir -p /etc/home/ONTUSER
+    chmod g+w /etc/home/ONTUSER
+  fi
+}
+
+init_pre_app()
+{
+  if [ -x /configs/pre_app_script.sh ];then
+    /configs/pre_app_script.sh
+  fi
+}

@@ -1,0 +1,85 @@
+#!/bin/sh
+#@author Erma Perenda - erma.1.perenda@nokia-sbell.com
+#This shell script implements dfs_partial reaction
+##########################GET WLAN INTERFACES DATA########################
+
+. functions
+
+interface_5g=$(get_fh_interface_name 5)
+interface_24g=$(get_fh_interface_name 24)
+
+if [ $# -eq 1 ]; then
+  active_5g_radio="";
+  my_current_channel=0;
+  active_24g_radio="";
+  
+  #find the active interfaces, current channel
+   for rint in $(ifconfig | grep $interface_5g | grep -v ".v0 " | awk -F " " '{print $1}'); do
+      is_up=`wl -i $rint isup`;
+      is_ap_mode=`wl -i $rint ap`;
+      is_hidden=`wl -i $rint closed`;
+
+      if [ "$is_up" == "1" -a "$is_ap_mode" == "1" -a "$is_hidden" == "0" ]; then
+        active_5g_radio=$rint
+        my_current_channel=`wl -i $rint channel | grep "mac channel" | awk -F " " '{printf "%d",$4}'`;
+        my_current_bw=`wl -i $rint status | grep Chanspec | awk -F " " '{gsub("MHz","",$5); print $5;}'`;
+        break;
+      fi
+   done 
+ 
+    #act only if current channel is dfs
+    if [ $my_current_channel -gt 48 -a $my_current_channel -lt 149 ];then
+      if [ -e /configs/uniumd/map_table.db ]; then
+        #get 24 INFO of target buddy
+        target_ap=`cat /configs/uniumd/map_table.db | grep $1 | awk -F "_" '{printf "%s", $1}'`;
+        if [ ! -z "$target_ap" ];then
+          target_24bssid=`cat /configs/uniumd/map_table.db | grep $target_ap"_wl1_4" | awk -F "=" '{printf "%s",toupper($2)}'`;
+
+          if [ ! -z "$target_24bssid" ];then
+            
+             for rint in $(ifconfig | grep $interface_24g | grep -v ".v0 " | awk -F " " '{print $1}'); do
+                is_up=`wl -i $rint isup`;
+                is_ap_mode=`wl -i $rint ap`;
+                is_hidden=`wl -i $rint closed`;
+
+                if [ "$is_up" == "1" -a "$is_ap_mode" == "1" -a "$is_hidden" == "0" ]; then
+                  active_24g_radio=$rint
+                  break;
+                fi
+              done
+              if [ ! -z "$active_24g_radio" ];then
+                channels="";
+                for ch in $(wl -i $active_24g_radio chan_info | awk -F " " '{print $2}'); do
+                  if [ $ch -gt 15 ]; then 
+                    continue;
+                  fi
+                  channels=$channels""$ch",";
+                done;
+
+                is_alive=`wl -i $active_24g_radio escanresults -t passive -p 150 -b "$target_24bssid" | awk -v target_bssids="$target_24bssid" -F " " '
+                 BEGIN {OFS=""}
+             
+                /SSID/ {if($1=="SSID:") ssid=substr($2,2,length($2)-2); if($1=="BSSID:") bssid=toupper($2);}
+                /Chanspec/ { width=substr($5,1,3);}
+                /Primary channel/ {channel=$3;
+                if(length(ssid)>0 && index(target_bssids,bssid)>0)
+                printf "\{\"bssid\":\"%s\",\"channel\":%d,\"bw\":%d\},",bssid,channel,width;}'`;
+                
+                if [ ! -z "$is_alive" ];then
+                 check_non_dfs=`wl -i $active_5g_radio chan_info | grep " 36"`;
+                 nondfs_5g=36;
+                if [ -z "$check_non_dfs" ]; then
+                 nondfs_5g=149;
+                fi
+                 a=`wl -i $active_5g_radio csa 1 5 "$nondfs_5g"/"$my_current_bw"`;
+               fi
+              fi
+             
+          fi
+        fi
+      fi
+      
+    fi
+      
+fi
+

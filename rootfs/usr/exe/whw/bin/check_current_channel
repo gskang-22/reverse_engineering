@@ -1,0 +1,42 @@
+#!/bin/sh
+
+. functions
+
+[ -f /tmp/current_channel ] && . /tmp/current_channel || CHANGED=y
+
+#echo 5G From channel $my_channel_5g/$my_bw_5g
+#echo 2.4G From channel $my_channel_24g/$my_bw_24g
+
+INTF_5G=$(get_bh_interface_name 5)
+INTF_24G=$(get_bh_interface_name 24)
+
+new_channel_5g=$(get_current_channel $INTF_5G)
+#`wl -i $INTF_5G channel | grep "mac channel" | awk -F " " '{printf "%d",$4}'`;
+new_bw_5g=$(get_current_bw $INTF_5G)
+#`wl -i $INTF_5G status | grep Chanspec | awk -F " " '{gsub("MHz","",$5); print $5;}'`;
+
+new_channel_24g=$(get_current_channel $INTF_24G)
+#`wl -i $INTF_24G channel | grep "mac channel" | awk -F " " '{printf "%d",$4}'`;
+new_bw_24g=$(get_current_bw $INTF_24G)
+#`wl -i $INTF_24G status | grep Chanspec | awk -F " " '{gsub("MHz","",$5); print $5;}'`;
+
+if [ ! "$CHANGED" == "y" ]; then
+
+	if [ ! $((new_channel_5g+0)) -eq $((my_channel_5g+0)) -o ! $((new_bw_5g+0)) -eq $((my_bw_5g+0)) ]; then
+		echo 5G changed $my_channel_5g/$my_bw_5g "-->" $new_channel_5g/$new_bw_5g checked on `date`>> /tmp/historychan.txt
+		CHANGED=y
+	fi
+
+	if [ ! $((new_channel_24g+0)) -eq $((my_channel_24g+0)) -o ! $((new_bw_24g+0)) -eq $((my_bw_24g+0)) ]; then
+		echo 2.4G changed $my_channel_24g/$my_bw_24g "-->" $new_channel_24g/$new_bw_24g checked on `date`>> /tmp/historychan.txt
+		CHANGED=y
+	fi
+fi
+
+if [ "$CHANGED" == "y" ]; then
+	echo my_channel_5g=$((new_channel_5g+0)) > /tmp/current_channel
+	echo my_bw_5g=$((new_bw_5g+0)) >> /tmp/current_channel
+	echo my_channel_24g=$((new_channel_24g+0)) >> /tmp/current_channel
+	echo my_bw_24g=$((new_bw_24g+0)) >> /tmp/current_channel
+fi
+

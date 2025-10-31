@@ -1,0 +1,15 @@
+#!/bin/sh
+for i in `seq 5`
+do
+	bs /d/x sbwrc 0 1 0 yes
+	sleep 3
+	bs /d/x gbwrr
+	sleep 1
+	for k in `seq 0 1 62`
+	do
+		echo bs /d/x gbwrd $k
+		bs /d/x gbwrd $k
+	done
+	bs /d/x sbwrc 0 1 0 no
+	sleep 3 
+done

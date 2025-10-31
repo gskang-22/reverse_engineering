@@ -1,0 +1,197 @@
+#!/bin/sh
+#@author Erma Perenda - erma.1.perenda@nokia-sbell.com
+#This shell script implements the channel scanning per the same ssids as mine for 5 GHz radio
+#the output is json with the list of the candidates
+
+. functions
+
+scan_per_ssid(){
+  if [ $# -eq 3 ];then 
+  for ch in $(wl -i $1 chan_info | awk -F " " '{print $2}'); do
+
+         if [ $ch -lt 15 -a "$3" == "5" ]; then 
+          continue;
+        fi
+        
+        if [ $ch -gt 15 -a "$3" == "24" ]; then 
+          continue;
+        fi
+        
+        wl -i $1 escanresults -t passive -p 250 -c $ch |  sed "s/\\\\x//g" | awk -v target_ssids="$2" -F " " '
+        BEGIN {OFS=""}
+     
+        /SSID/ {if($1=="SSID:") ssid=substr($2,2,length($2)-2); if($1=="BSSID:") bssid=$2;}
+        /Mode/ { mode=$2; rssi=$4; snr=$7; noise=$10; beacon_int=$13;}
+        /Chanspec/ { ch_log=$4; width=substr($5,1,3);}
+        /Primary channel/ {channel=$3;
+        rssi=rssi+0;
+        my_buddy=0;
+        if(length(ssid)>0 && index(target_ssids,ssid)>0)
+          my_buddy=1;
+        if(length(ssid)>0)
+        printf "\{\"bssid\":\"%s\",\"ssid\":\"%s\",\"sig\":%d,\"pr_ch\":%d,\"bw\":%d,\"sec_ch\":%d,\"my_buddy\":%d\},",\
+                  bssid,ssid,rssi,channel,width,ch_log,my_buddy}';
+       usleep 15000;
+    done;
+
+  fi
+}
+
+scan_per_bssid(){
+  if [ $# -eq 3 ];then
+    touch /tmp/wds_processing #prevent background-scan on B1
+    sleep 0.1
+
+    for ch in $(wl -i $1 chan_info | awk -F " " '{print $2}'); do
+
+        if [ $ch -lt 15 -a "$3" == "5" ]; then 
+          continue;
+        fi
+        
+        if [ $ch -gt 15 -a "$3" == "24" ]; then 
+          continue;
+        fi
+      
+      wl -i $1 escanresults -t passive -p 250 -c $ch | sed "s/\\\\x//g"  | awk -v target_bssids="$2" -F " " '
+       BEGIN {OFS=""}
+     
+      /SSID/ {if($1=="SSID:") ssid=substr($2,2,length($2)-2); if($1=="BSSID:") bssid=toupper($2);}
+      /Mode/ { mode=$2; rssi=$4; snr=$7; noise=$10; beacon_int=$13;}
+      /Chanspec/ { ch_log=$4; width=substr($5,1,3);}
+      /Primary channel/ {channel=$3;
+        rssi=rssi+0;
+        my_buddy=0;
+      if(length(ssid)>0 && index(target_bssids,bssid)>0)
+        my_buddy=1;
+      if(length(ssid)>0)
+       printf "\{\"bssid\":\"%s\",\"ssid\":\"%s\",\"sig\":%d,\"pr_ch\":%d,\"bw\":%d,\"sec_ch\":%d,\"my_buddy\":%d\},",\
+                  bssid,ssid,rssi,channel,width,ch_log,my_buddy}';
+  done;
+  fi
+}
+
+####### 	MAIN PROGRAM		##########
+
+if [ $# -eq 1 -o $# -eq 2 ]; then
+  . functions
+  echo "start_find_parent $1 $2" >> /tmp/dbg_healing
+  neighbors="";
+  cadidate_list="";
+  active_radio="";
+  my_current_channel=0;
+  my_bw=0;
+  my_ssid="";
+  my_bssid="";
+  pom=$(get_fh_interface_name 5);
+  hide_if=$(get_bh_interface_name 5)
+  if [ $1 == "24" ];then
+    pom=$(get_fh_interface_name 24);
+    hide_if=$(get_bh_interface_name 24)
+  fi
+#  for rint in $(ifconfig | grep "$pom" | grep -v ".v0 " | awk -F " " '{print $1}'); do
+#    is_up=`wl -i $rint isup`;
+#    is_ap_mode=`wl -i $rint ap`;
+#    is_hidden=`wl -i $rint closed`;
+#
+#    if [ "$is_up" == "1" -a "$is_ap_mode" == "1" -a "$is_hidden" == "0" ]; then
+#      active_radio=$rint
+#      my_ssid="$my_ssid "`wl -i $rint ssid | awk -F ": " '{gsub("\"","",$2);print $2}'`;
+#      my_bssid="$my_bssid,"`wl -i $rint bssid`;
+#      my_current_channel=$(get_current_channel $rint)
+#		#`wl -i $rint channel | grep "mac channel" | awk -F " " '{printf "%d",$4}'`;
+#      my_bw=`wl -i $hide_if status | grep Chanspec | awk -F " " '{gsub("MHz","",$5); print $5;}'`;
+#    fi
+#  done
+
+	rint=$hide_if;
+	active_radio=$rint;
+	my_ssid="$my_ssid "`wl -i $rint ssid | awk -F ": " '{gsub("\"","",$2);print $2}'`;
+	my_bssid="$my_bssid,"`wl -i $rint bssid`;
+	my_current_channel=$(get_current_channel $rint)
+	#`wl -i $rint channel | grep "mac channel" | awk -F " " '{printf "%d",$4}'`;
+	my_bw=`wl -i $hide_if status | grep Chanspec | awk -F " " '{gsub("MHz","",$5); print $5;}'`;
+
+
+  if [ ! -z "$active_radio" ];then
+    if [ $((my_current_channel+0)) -lt 149 -a $((my_current_channel+0)) -gt 48 ]; then
+      check_non_dfs=`wl -i $active_radio chan_info | grep " 48"`;
+      nondfs_5g=48;
+      if [ -z "$check_non_dfs" ]; then
+        nondfs_5g=161;
+      fi     
+      echo "nondfs_5g=$nondfs_5g" >> /tmp/dbg_healing
+		wifichip=`hcfgtool |grep "WIFI.0.SOLUTION" |awk -F ":" '{print $2}'`
+		if [  "$wifichip" == "BCM43217" -o "$wifichip" == "BCM43602" ];then
+			if [ "$2" == "initial" ];then
+				setChanspec -c $nondfs_5g -b 80 >> /tmp/dbg_healing
+				echo healing : setChanspec -c $nondfs_5g >> /tmp/historychan.txt
+				#wl -i $active_radio csa 0 8 $nondfs_5g/80
+				#a=`cfgcli --from-ai -s InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.Channel $nondfs_5g --no-save-flash`;
+			else
+				#a=`cfgcli --from-ai -s InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.Channel $nondfs_5g --no-save-flash`;
+				setChanspec -c $nondfs_5g >> /tmp/dbg_healing
+				echo healing : setChanspec -c $nondfs_5g >> /tmp/historychan.txt
+				#wl -i $active_radio csa 0 8 $nondfs_5g/80
+			fi			 
+		else 
+			if [ "$2" == "initial" ];then
+				echo "start_find_parent 5 initial do nothing" >> /tmp/dbg_healing
+			else
+				#a=`cfgcli --from-ai -s InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.Channel $nondfs_5g --no-save-flash`;
+				setChanspec -c $nondfs_5g >> /tmp/dbg_healing
+				echo healing : setChanspec -c $nondfs_5g >> /tmp/historychan.txt
+				#wl -i $active_radio csa 0 8 $nondfs_5g/80
+			fi	
+		fi
+
+      #wl -i $active_5g_radio down;
+      #a=`wl -i $active_5g_radio chanspec "$nondfs_5g"/"$my_bw"`;
+      #wl -i $active_5g_radio up;  
+      my_current_channel=$nondfs_5g;
+      #wl -i $active_5g_radio csa 1 5 "$nondfs_5g"/"$my_bw"; 
+      sleep 5 ;
+    fi
+ 
+    candidate_bssid="";
+	
+	if [ -e /configs/onboarding_healing_info.txt ]; then
+      candidate_bssid=` cat /configs/onboarding_healing_info.txt | grep ",$1," | awk -F "," '{printf "%s,",toupper($1)}'`;
+    fi
+	
+	if [ -e /configs/buddies_info.txt.bak -a -z "candidate_bssid" ]; then
+      candidate_bssid=` cat /configs/buddies_info.txt.bak | grep ",$1," | awk -F "," '{printf "%s,",toupper($1)}'`;
+    fi	
+	
+    if [ -e /configs/buddies_info.txt ]; then
+      candidate_bssid=` cat /configs/buddies_info.txt | grep ",$1," | awk -F "," '{printf "%s,",toupper($1)}'`;
+    fi
+	
+	if [ -e /flash/whw/ai_engine/buddies_info.txt ]; then
+      candidate_bssid=` cat /flash/whw/ai_engine/buddies_info.txt | grep ",$1," | awk -F "," '{printf "%s,",toupper($1)}'`;
+    fi
+
+    if [ -z "$candidate_bssid" ]; then
+        candidate_bssid=`wl -i $pom wds|cut -d" " -f2`
+    fi
+   
+   candidates='{"my_channel":'$my_current_channel',"my_bw":'$my_bw',"candidates":[ ';
+   
+   if [ -z "$candidate_bssid" ];then
+
+     candidates=$candidates$(scan_per_ssid "$active_radio" "$my_ssid" "$1");
+     
+    else
+
+      candidates=$candidates$(scan_per_bssid "$active_radio" "$candidate_bssid" "$1");
+
+    fi
+    candidates=${candidates%?}"]}"
+
+    echo $candidates;
+ 
+  else 
+    echo "{}";
+  fi
+else
+  echo "{}";
+fi

@@ -1,0 +1,19 @@
+config 'stats' 'stats'
+	option 'enable' true
+	option 'check_interval' '10'
+	list 'rssi_interval' '-60'
+	list 'rssi_interval' '-72'
+	option 'rssi_hysteresis' '3'
+
+config 'devices' 'devices'
+        list 'device' 'wl0'
+        list 'device' 'wl0.1'
+        list 'device' 'wl0.2'
+        list 'device' 'wl0.3'
+        list 'device' 'wl0.4'
+        list 'device' 'wl1'
+        list 'device' 'wl1.1'
+        list 'device' 'wl1.2'
+        list 'device' 'wl1.3'
+        list 'device' 'wl1.4'
+

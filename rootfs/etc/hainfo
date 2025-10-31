@@ -1,0 +1,44 @@
+beacon_1.0.0
+c6488e5dbc652c5112a95ef0050a5ad5fe82925b
+SDK REV - c6488e5dbc652c5112a95ef0050a5ad5fe82925b
+howi REV - 80716a79929d2b994e81a282b17a5346bf5d6626
+custom REV - bbd531c2799a07cacde59d90b2b6b5be57823151
+owrt REV - 084e13b4a20a67889892df53e2027c32f0812bcd
+bin/packages/arm_cortex-a9/owrt/libubox_2019-06-16-ecf56174da9614a0b3107d33def463eefb4d7785_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/libblobmsg-json_2019-06-16-ecf56174da9614a0b3107d33def463eefb4d7785_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/libubus_2018-10-06-2_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/ubusd_2018-10-06-2_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/libuci_2019-05-17.1-3_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/libuceasy_2019-11-15-1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/boardd_2020-01-30-a1b2027a247ac4295f788c6d3dcb79dd2d1ddca6-1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/libuuid_2.25.2-5_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/libmosquitto-ssl_1.6.12-1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/plasmodium_2021-03-15-964bf77c8ae7f5d4468f5a1305aaef485491f2ed-2_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/fonendoscope_2021-03-24-faf46e8f47c13dabc2fe302e6b03f95ab74ae456-1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/capin_2020-07-21-6e21062ce3931ffe5694184a6eb9d4349238ad0d-1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/nemo-bcm_capin_2020-01-30-ca464050064c7f8da04f3533325ee81758ea8a0a-1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/libiperf3_3.1.7-1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/rpcd_2016-06-30-23417e94d25570e6d62542bac46edd51e8e0243a_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/rpcd-libiperf3_2018-04-05-05d5505c4dfc51751683c087cdc2599a6bfe6f5d-1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/rpcd-mod-rpcsys_2016-06-30-23417e94d25570e6d62542bac46edd51e8e0243a_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/rpcd-mod-file_2016-06-30-23417e94d25570e6d62542bac46edd51e8e0243a_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/zlib_1.2.11-2_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/custom/libcbor_0.5.0-2_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/apcloud_1.3-21-d31988eb14ff5efb4a4f058e6d4631588ca17e23-21_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/claim_0.1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/startup_0.1-1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/apcloud_watchdog_2020-2-19-0996faa493cfea147a82326da1f6e09b4fd233d6-7_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/libnl-tiny_0.1-4_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/ustatusd_2017-11-17-fd3a71c3b4a5cddc6ba3a956d5a2a86c4c84d146-1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/meshintf_2020-09-30-e587ae90539e06f7d08b7ccc8d09ec8954f83f08-1.0_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/libjson-c_0.13-3_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/wifimon_2019-10-10-33c1c38c44cec3157a4670cf1d22c7cd81fceeb1-1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/dhcpmon_2018-12-24-d88b0987c40154f884fa91de0f21a66f911ce390-1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/ookla_1-02c8bb17f3e3969c2f56226796d562b09defc312_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/nil_1.0-1.0-3c60585da1bbc1f791abc6f4b3b6cab780f51d82-1.0_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/log_agent_2020-08-24-e3c8a2dfc573be9ac96980ba075319e002c09186-e3c8a2dfc573be9ac96980ba075319e002c09186_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/rpcd-libnwi_2020-07-19-cc47087779fcabc3adffa22cb6bdf2cd40f5b41e-1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/howi/rpcd-libdevice_usage_2020-12-07-37febac4dd4d078f9017e25d34d35df00cd78477-1_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/ubus_2018-10-06-2_arm_cortex-a9.ipk
+bin/packages/arm_cortex-a9/owrt/uci_2019-05-17.1-3_arm_cortex-a9.ipk
+

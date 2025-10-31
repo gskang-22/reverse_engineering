@@ -1,0 +1,6 @@
+#### /etc/etcfile configuration file for storage but age, per line per item
+#### configuration line formart: <link_source @ /configs/>
+# ------------------------------------------------------------------------------
+/configs/etc/group
+/configs/etc/passwd
+/configs/etc/shadow

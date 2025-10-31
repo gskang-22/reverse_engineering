@@ -1,0 +1,140 @@
+#!/bin/sh
+
+# Usage: /etc/init.d/rsyslog-sendout start/restart controllerIPAddress
+# The configuration file has higher priority than command line, this for debugging purpose
+
+LOGD=/sbin
+# klogd is an option
+KLOGD=klogd
+RLOGD=rsyslogd
+remote=$2
+
+# CMD_CFGFILE changed via command line or WEB GUI(Customer log level)
+RSYSLOGD_CMD_CFGFILE=/logs/rsyslog_cmd_config
+RSYSLOGD_CMD_TMP_CFGFILE=/tmp/rsyslog_cmd_config
+
+if [ -e "/logs/messages" ]; then
+	cp -f /logs/messages /tmp/messages
+	rm -f /logs/messages
+fi
+
+if [ -e "/logs/messages.0" ]; then
+	cp -f /logs/messages.0 /tmp/messages.0
+	rm -f /logs/messages.0
+fi
+
+if [ -e "/logs/messages.1" ]; then
+	cp -f /logs/messages.1 /tmp/messages.1
+	rm -f /logs/messages.1
+fi
+
+if [ -e "/logs/customer" ]; then
+	cp -f /logs/customer /tmp/customer
+	rm -f /logs/customer
+fi
+
+# Load configuration file, overwrite default value.
+rsyslogd_load_cmd_cfgfile()
+{
+    if [ -e "$RSYSLOGD_CMD_CFGFILE" ]; then
+        source $RSYSLOGD_CMD_CFGFILE
+    fi
+    # RSYSLOGD_CMD_TMP_CFGFILE has higher priority than RSYSLOGD_CMD_CFGFILE
+    if [ -e "$RSYSLOGD_CMD_TMP_CFGFILE" ]; then
+        source $RSYSLOGD_CMD_TMP_CFGFILE
+    fi
+}
+
+rsyslogd_generate_conf()
+{
+    if [ -e "/etc/localtime" ]
+    then
+        TZ=/etc/localtime
+        export TZ
+        echo "rsyslog start TZ ev $TZ"
+    fi
+    touch   /tmp/rsyslog-sendout.conf
+    chmod   755     /tmp/rsyslog-sendout.conf
+    echo '$ModLoad imuxsock.so' >> /tmp/rsyslog-sendout.conf
+    echo '$ModLoad imklog.so' >> /tmp/rsyslog-sendout.conf
+    echo '$ModLoad imfile.so' >> /tmp/rsyslog-sendout.conf
+    echo "*.* action(type=\"omfwd\" target=\"$remote\" port=\"514\" protocol=\"udp\")" >> /tmp/rsyslog-sendout.conf
+    echo 'module(load="imfile" PollingInterval="3")' >> /tmp/rsyslog-sendout.conf
+    if [ -e "/tmp/messages" ]; then
+        echo 'input(type="imfile" File="/tmp/messages" Tag="messages" Severity="notice" Facility="daemon")' >> /tmp/rsyslog-sendout.conf
+    fi
+
+    if [ -e "/tmp/messages.0" ]; then
+        echo 'input(type="imfile" File="/tmp/messages.0" Tag="messages.0" Severity="notice" Facility="daemon")' >> /tmp/rsyslog-sendout.conf
+    fi
+
+    if [ -e "/tmp/messages.1" ]; then
+        echo 'input(type="imfile" File="/tmp/messages.1" Tag="messages.1" Severity="notice" Facility="daemon")' >> /tmp/rsyslog-sendout.conf
+    fi
+
+    if [ -e "/tmp/customer" ]; then
+        echo 'input(type="imfile" File="/tmp/customer" Tag="customer" Severity="notice" Facility="local0")' >> /tmp/rsyslog-sendout.conf
+    fi
+}
+
+rsyslogd_conf_cleanup()
+{
+    if [ -e "/tmp/rsyslog-sendout.conf" ]; then
+            rm /tmp/rsyslog-sendout.conf > /dev/null 2>&1 
+    fi
+}
+
+# This function used to register file into AONT daemon system, only for rsyslogd at current release(HDR6101)
+syslog_dm_register()
+{
+    if [ -e "$LOGD/$RLOGD" ]; then
+        if [ ! -d /tmp/daemon ]; then
+            mkdir -p /tmp/daemon
+        fi
+        echo "rsyslogd" > /tmp/daemon/rsyslogd.dm
+        echo "1" >> /tmp/daemon/rsyslogd.dm
+        echo "null" >> /tmp/daemon/rsyslogd.dm
+        echo "0" >> /tmp/daemon/rsyslogd.dm
+        echo "dm_syslog.sh" >> /tmp/daemon/rsyslogd.dm
+        pid=`ps | grep rsyslogd | grep -v grep | grep -v Z | awk '{print $1}'`
+        echo "$pid" >> //tmp/daemon/rsyslogd.dm
+    fi
+}
+
+rsyslogd_stop()
+{
+    if [ -e /tmp/daemon/rsyslogd.dm ]; then
+        rm -f /tmp/daemon/rsyslogd.dm > /dev/null 2>&1
+    fi
+    if [ -e /var/run/rsyslogd.pid ]; then
+        rm -f /var/run/rsyslogd.pid > /dev/null 2>&1 
+    fi
+    killall -q -KILL $KLOGD $RLOGD
+}
+
+rsyslogd_start()
+{
+    rsyslogd_conf_cleanup
+    rsyslogd_load_cmd_cfgfile
+    rsyslogd_generate_conf
+    $RLOGD -f /tmp/rsyslog-sendout.conf
+    $KLOGD&
+    syslog_dm_register
+}
+
+rsyslogd_restart()
+{
+    rsyslogd_stop
+    rsyslogd_start
+    syslog_dm_register
+}
+
+case $1 in
+        start)
+                rsyslogd_start
+        ;;
+
+        restart)
+                rsyslogd_restart
+        ;;
+esac

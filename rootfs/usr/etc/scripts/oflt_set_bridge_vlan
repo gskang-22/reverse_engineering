@@ -1,0 +1,13 @@
+#!/bin/sh
+
+corechipset=$(hcfgtool get UNIT.CORE)
+if [ "${corechipset}" = "BCM63136" -o "${corechipset}" = "BCM63138" ]; then
+    s="conn_id=0&conn_mode=B&ipv=1&ipv6_origin=AutoConfigured&ipv6_prefix=PrefixDelegation&aftr_mode=0&aftr_addr=&ip_mode=dhcp&pppoe_username=&pppoe_password=&externalIpAddr=&netmask=&defGateway=&ipAddr_v6=&defGw_v6=&prefix_v6=&firstDns=&secondDns=&natSw=on&mtu=1500&dhcp_enable=on&vlanSw=2&vlanId=$1&m8021p=1&servlist=INTERNET&tvid=&vport=1&svid=&vbindings=&act=&auth=factory"
+else
+    s="conn_id=0&conn_type=pppoe&servlist=INTERNET&conn_mode=B&ipv=1&pppoe_username=&pppoe_password=&mtu=1492&vlanSw=2&vlanId=$1&m8021p=1&ip_mode=pppoe&externalIpAddr=&netmask=&defGateway=&firstDns=&secondDns=&ipv6_origin=AutoConfigured&ipv6_prefix=PrefixDelegation&ipAddr_v6=&defGw_v6=&prefix_v6=&firstDns_v6=&secondDns_v6=&aftr_mode=0&aftr_addr=&trigger=AlwaysOn&act=&tr69_flag=&auth=factory"
+fi
+
+export CONTENT_LENGTH=${#s} REQUEST_METHOD=POST CONTENT_TYPE=application/x-www-form-urlencoded  LD_LIBRARY_PATH=/webs/
+
+echo $s | /webs/wan_config.cgi config
+

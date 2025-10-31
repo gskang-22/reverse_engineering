@@ -1,0 +1,63 @@
+#!/bin/sh
+#@author Erma Perenda - erma.1.perenda@nokia-sbell.com
+#This shell script returns wds_peers information
+##########################GET WLAN INTERFACES DATA########################
+
+. functions
+
+get_peers(){
+  if [ $# -eq 1 ]; then
+
+    for rint in $(ifconfig | grep $1 | grep -v ".v0 " | awk -F " " '{print $1}'); do
+       is_up=`wl -i $rint isup`;
+       is_ap_mode=`wl -i $rint ap`;
+       if [ "$is_up" == "1" -a "$is_ap_mode" == "1" ]; then
+        name=$rint
+        for peer in $(wl -i $rint wds); do
+          a=`echo $peer | grep wds`;
+          if [ -z "$a" ]; then
+             #check if interfaces corresponds
+              pom_in=`echo $rint | awk -F " " '{gsub("wl","",$1); a=$1; if(length($1)==1) a=$1".0"; print a}'`;
+              is_on_me=`wl -i $rint wds | awk -F ":" '{gsub("wds","wl",$1); print $1}'  | grep "$pom_in"`;
+              if [ -z "$is_on_me" ];then
+               continue;
+              fi
+              is_wds_up=`wl -i $rint sta_info $peer | grep WDS_LINKUP`;
+              is_state_authed=`wl -i $rint sta_info $peer |grep AUTHORIZED`
+              active=1;
+              if [ -z "$is_wds_up" -o -z "$is_state_authed" ];then
+                active=0;
+              fi
+              printf "{\"active\":%d,\"bssid\":\"%s\"}," $active $peer;
+
+          fi
+        done
+
+      fi
+  done;        
+
+  fi
+
+ }
+
+###################################MAIN PROGRAM###################################
+/usr/exe/whw/bin/check_current_channel
+if [ $# -eq 1 ]; then
+  wds_peers='{"wds_peers":[ ';
+  pom="";
+  if [ $1 -eq 5 ];then
+    pom=`get_peers $(get_fh_interface_name 5)`;
+  fi
+
+  if [ $1 -eq 24 ];then
+    pom=`get_peers $(get_fh_interface_name 24)`;
+  fi
+  wds_peers=$wds_peers$pom;
+  wds_peers=${wds_peers%?};
+  wds_peers=$wds_peers']}';
+  echo $wds_peers;
+ 
+else
+ echo "{}"; 
+fi
+

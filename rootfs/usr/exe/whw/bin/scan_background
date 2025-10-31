@@ -1,0 +1,100 @@
+#!/bin/sh
+#@author Erma Perenda - erma.1.perenda@nokia-sbell.com
+#This shell script implements the exponential smoothing for channel utilization
+
+. functions
+
+if [ $# -eq 2 ];then
+  band=$1;
+  N=$2;
+  active_radio="";
+  grep_name=$(get_fh_interface_name 5);
+  my_mac_addr=`ifconfig br0 | grep "HWaddr"  | awk -F " " '{print $5}'`;
+  if [ "$band" == "24" ]; then
+    grep_name=$(get_fh_interface_name 24);
+  fi
+
+  for rint in $(ifconfig | grep "$grep_name" | grep -v ".v0 " | awk -F " " '{print $1}'); do
+    is_up=`wl -i $rint isup`;
+    is_ap_mode=`wl -i $rint ap`;
+    if [ "$is_up" == "1" -a "$is_ap_mode" == "1" ]; then
+      active_radio=$rint
+      my_current_channel=`wl -i $rint channel | grep "target channel" | awk -F " " '{printf "%d",$3}'`;
+      radar_in_scan=`wl -i $rint dfs_ap_move | grep "Radar Scan In Progress" | wc -l`;
+      if [ "$radar_in_scan" == "1" ];then
+        echo {};
+        exit 0;
+      fi
+    fi
+  done
+
+  if [ -z "$active_radio" ]; then
+    echo {};
+    exit 0;
+  fi
+  if [ $my_current_channel -gt 48 -a $my_current_channel -lt 148 ];then
+    echo "{}";
+    exit 0;
+  fi
+  data='{"request_type":6,"band":'$band',"br_mac":"'$my_mac_addr'","scan_res":[';
+
+  a=0
+  
+  while [ "$a" -lt $N ]    
+  do
+
+    for ch in $(wl -i $active_radio chan_info | awk -F " " '{print $2}'); do
+
+       if [ $ch -lt 15 -a $band -eq 5 ] || [ $ch -gt 15 -a $band -eq 24 ]; then 
+          continue;
+        fi
+
+      my_current_channel=`wl -i $rint channel | grep "target channel" | awk -F " " '{printf "%d",$3}'`;
+      if [ $my_current_channel -gt 48 -a $my_current_channel -lt 148 ];then
+        echo "{}";
+        exit 0;
+      fi  
+
+      nbr_aps=`wl -i $active_radio escanresults -t passive -p 10 -h 1000 -c $ch`;
+      sleep 1;
+    done;
+    data=$data'{"no":'$a',"res":[';
+    for ch in $(wl -i $active_radio chan_info | awk -F " " '{print $2}'); do
+
+       if [ $ch -lt 15 -a $band -eq 5 ] || [ $ch -gt 15 -a $band -eq 24 ]; then 
+          continue;
+        fi
+        busy=0;
+        noise=0;
+          b=`printf "%x" $ch`;
+          if [ $ch -lt 15 ]; then
+            b="0x100$b";
+          else
+            b="0xd0$b";
+          fi
+      
+         busy=`wl -i $active_radio chanim_stats all | grep -A1 "$b" | tail -n 1 | awk -F " " '{gsub("cca_obss:","",$5); printf $5+$7+$9}'`;
+         noise=`wl -i $active_radio chanim_stats all | grep "$b" | awk -F " " '{printf $10}'`;
+      
+        if [ -z "$busy" ];then
+          busy=0;
+          noise=-100;
+        fi
+
+       data=$data'{"ind":'$ch',"util":'$busy',"knoise":'$noise'},'
+     done;
+      data=${data%?};
+      data=$data']},';
+    a=`expr $a + 1`
+
+  done
+ 
+  data=${data%?};
+  data=$data']}';
+
+ echo $data;
+ 
+else
+  echo {};
+fi
+

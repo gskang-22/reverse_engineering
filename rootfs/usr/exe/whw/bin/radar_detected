@@ -1,0 +1,33 @@
+#!/bin/sh
+
+. functions
+
+last_ch=`cat /flash/whw/ai_engine/ai-configs.conf | grep ch_5g | awk -F "=" '{print $2}'`;
+if [ ! -z "$last_ch" ];then
+  if [ $last_ch -gt 48 -a $last_ch -lt 149 ];then
+    active_5g="";
+     for rint in $(ifconfig | grep $(get_fh_interface_name 5) | grep -v ".v0 " | awk -F " " '{print $1}'); do
+         is_up=`wl -i $rint isup`;
+         is_ap_mode=`wl -i $rint ap`;
+         if [ "$is_up" == "1" -a "$is_ap_mode" == "1" ]; then
+          active_5g=$rint
+          break;
+        fi
+      done
+      if [ ! -z "$active_5g" ];then
+        check_radar=`wl -i $active_5g chan_info | grep "Channel $last_ch" | grep "Out of Service" | awk -F " " '{print $13}'`;
+        if [ ! -z "$check_radar" ]; then
+          echo 1;
+        else
+          echo 2;
+        fi
+      else
+        echo 2;
+      fi
+
+  else
+    echo 2;
+  fi
+else
+  echo 2
+fi

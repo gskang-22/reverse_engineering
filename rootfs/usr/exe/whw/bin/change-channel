@@ -1,0 +1,255 @@
+#!/bin/sh
+#Change channel shell scripts performs channel and bandwidth setup for BCM devices
+#it accepts 9 parameters: interface_name change-channel primary_channel channel_width bonding index healing_channel healing_ch_width bonding index delay_action_s is_called_ny_healing
+#it first applied the channel and width setup and then monitors if it can establish link toward master AP within 30 seconds
+#in case that links are not established it apply self-healing action
+#root ap will also apply healing action and trigger channel syncronization within whole network
+#if it doesnt receive ACK of success of action from target device within 30 seconds
+#0-bonding below(primary part is above so it is $3u), 1-bonding above (primary part is below)
+
+. functions
+
+set_chanspec(){
+
+ if [ $# -ge 5 ]; then
+
+
+  #set bw capabilities to max if they are not for healing case only
+  if [ $2 -gt 15 ];then
+
+    check_bw_cap=`wl -i $1 bw_cap 5g`;
+
+    if [ ! "$check_bw_cap" == "0x7" ];then
+        sleep 1;
+    fi
+
+  fi
+
+  if [ $2 -lt 15 ]; then
+     check_bw_cap=`wl -i $1 bw_cap 2g`;
+    if [ ! "$check_bw_cap" == "0x3" ];then
+		sleep 1;
+    fi
+  fi
+
+   #2.4ghz and bw 40 mhz
+  if [ $2 -lt 15 -a $3 -eq 40 ]; then
+    if [ $4 -eq 0 ]; then
+      a=`wl -i $1 chanspec "$2"/"$3"u`;
+      wl -i $1 csa 0 8 "$2"/"$3"u;
+    else
+      a=`wl -i $1 chanspec "$2"/"$3"l`;
+      wl -i $1 csa 0 8 "$2"/"$3"l;
+    fi
+  fi
+
+  #2.4ghz and bw 20mhz
+  if [ $2 -lt 15 -a $3 -eq 20 ]; then
+    a=`wl -i $1 chanspec "$2"/"$3"`;
+    wl -i $1 csa 0 8 "$2"/"$3"
+  fi
+
+  #5ghz
+  if [ $2 -gt 15 ]; then
+
+    #nondfs and healing
+    if [ $2 -lt 49 -o $2 -gt 148 ] || [ $5 -eq 1 ]; then
+      if [ $5 -eq 1 ];then
+      #used only for healing
+#      wl -i $1 down;
+#      a=`wl -i $1 chanspec "$2"/"$3"`;
+#      wl -i $1 up;
+#      a=`cfgcli --no-rts -s InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.Channel $2`;
+        #cfgcli --from-ai -s InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.X_ASB_COM_OperatingChannelBandwidth "$3"MHz;
+        #touch /tmp/force_radio_down_up
+        #cfgcli --from-ai -s InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.Channel $2;
+	#echo cfgcli --from-ai -s InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.Channel $2 >> /tmp/historychan.txt
+		setChanspec -c $2 -b $3
+		echo Healing : setChanspec -c $2 -b $3 >> /tmp/historychan.txt
+		#wl -i $1 csa 0 8 $2/$3
+#        for itf in `wl -i wl0 wds|cut -f0 -d:` ; do
+#          wlctl -i $itf wds_enable 1
+#        done
+      else
+        a=`wl -i $1 chanspec "$2"/"$3"`;
+        wl -i $1 csa 0 8 "$2"/"$3"
+	echo wl -i $1 csa 0 8 "$2"/"$3" >> /tmp/historychan.txt
+      fi
+    else
+      #check if zerowait dfs is supported
+      a=`wl -i $1 chanspec "$2"/"$3"`;
+     
+      #check_dfs=`wl -i $1 dfs_ap_move`;
+      wl -i $1 dfs_ap_move > /dev/null 2>&1
+      check_dfs=$?
+      if [ $check_dfs -eq 0 ];then
+		interface_5g=$(get_fh_interface_name 5)
+        check_enabled=`nvram get $interface_5g"_acs_bgdfs_enab"`;
+        check_idle=`nvram get $interface_5g"_acs_bgdfs_idle_interval"`;
+        
+        if [ "$check_enabled" == "0"  -o ! "$check_idle" == 300 ]; then
+          nvram set $interface_5g"_acs_bgdfs_enab=1"
+          nvram set $interface_5g"_acs_bgdfs_idle_interval=300"
+          nvram set $interface_5g"_reg_mode=h"
+          nvram set $interface_5g"_acs_fcs_mode=1"
+          nvram set $interface_5g"_acs_bgdfs_avoid_on_far_sta=0"
+
+         # nvram set $interface_5g"_acs_bgdfs_idle_frames_thld=300
+          nvram set $interface_5g"_acs_dfs=2"
+          nvram commit;
+          nvram save;
+        fi
+		if [ $WORK_ROLE ]; then
+			role=$WORK_ROLE
+		else
+			role=$(cfgcli -g InternetGatewayDevice.X_ALU-COM_Wifi.WorkRole | awk -F '=' '{print $2}')
+			echo WorkRole=$role >> /tmp/historychan.txt
+		fi
+        if [ ! x"$role" == x"Agent" ]; then
+            curr_bw=`wl -i $1 status | grep Chanspec | awk -F " " '{gsub("MHz","",$5); print $5;}'`;
+            dfs_disabled=`cfgcli -g InternetGatewayDevice.X_ASB_COM_PreConfig.X_ASB_COM_DisableWlanDFS | cut -d = -f2`
+            if [ "$dfs_disabled" == "true" ]; then
+	        wl -i $1 csa 0 8 "$2"/"$curr_bw"
+	        echo wl -i $1 csa 0 8 "$2"/"$curr_bw" >> /tmp/historychan.txt
+            else
+                wl -i $1 dfs_ap_move "$2"/"$curr_bw"
+	        echo wl -i $1 dfs_ap_move "$2"/"$curr_bw" >> /tmp/historychan.txt
+            fi
+ 		else
+    
+	    # Dealing with Force Alignment
+	    check_if_force_alignment $1 $2 $3
+        fi
+    else
+        #wl -i $1 csa 0 8 "$2"/"$3"
+
+	#DFS without ZeroWait, do wl chanspec cac.
+	#Wifihost is invoked for channel setting.
+		if [ $WORK_ROLE ]; then
+			role=$WORK_ROLE
+		else
+			role=$(cfgcli -g InternetGatewayDevice.X_ALU-COM_Wifi.WorkRole | awk -F '=' '{print $2}')
+			echo WorkRole=$role >> /tmp/historychan.txt
+		fi
+		
+		if [ ! x"$role" == x"Agent" ]; then
+			#cfgcli --from-ai -s InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.X_ASB_COM_OperatingChannelBandwidth "$3"MHz --no-save-flash --no-rts
+			#cfgcli --from-ai -s InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.Channel $2 
+			#echo cfgcli --from-ai -s InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.Channel $2  >> /tmp/historychan.txt		
+			setChanspec -c $2 -b $3
+			echo setChanspec -c $2 -b $3 >> /tmp/historychan.txt
+		else
+			echo "no action" >> /tmp/historychan.txt
+			# Dealing with Force Alignment
+			
+			if [ $# -eq 6 ];then
+				if [ $6 -eq 1 ];then
+			  		wl -i $1 csa 0 8 "$2"/"$3"
+					echo wl -i $1 csa 0 8 "$2"/"$3" >> /tmp/historychan.txt
+				fi				
+			else 
+			    check_if_force_alignment $1 $2 $3
+			fi			
+		fi
+      fi  
+    fi
+  fi
+
+ fi
+}
+
+check_if_force_alignment() {
+
+local intf=$1
+
+while true; do
+	#check if less than 500 seconds
+	#if [ $(date +%s) -gt $(($(date +%s -r /tmp/target_ch_bw)+500)) ]; then
+		#older than 500, treat as a new change-channel request
+	#	break;
+	#fi
+
+	read ch_bw < /tmp/target_ch_bw
+	if [ ! "$2 $3" == "$ch_bw" ]; then
+		#different channel to go, must be a new change-channel request
+		break;
+	fi
+
+	local channel_5g=$(get_current_channel $intf)
+	local bw_5g=$(get_current_bw $intf)
+
+	if [ "$2 $3" == "$channel_5g $bw_5g" ]; then
+		#channel changed successfully
+		rm /tmp/target_ch_bw
+		return
+	fi
+
+	echo "$2 $3" >> /tmp/target_ch_bw
+	if [ $(wc -l < /tmp/target_ch_bw) -gt 4 ]; then
+		# 5 requests for the same channel, it is the force-alignment
+		wl -i $1 csa 0 8 "$2"/"$3"
+		echo wl -i $1 csa 0 8 "$2"/"$3" >> /tmp/historychan.txt
+		rm /tmp/target_ch_bw
+	fi
+	return
+done
+echo "$2 $3" > /tmp/target_ch_bw
+}
+
+#main part
+if [ $# -ge 9 ]; then
+  sleep $8;
+  interface_name=$1;
+
+  if [ "$1" == "NN" ]; then
+    if [ $2 -lt 15 ]; then
+      for rint in $(ifconfig | grep $(get_fh_interface_name 24) | grep -v ".v0 " | awk -F " " '{print $1}'); do
+        is_up=`wl -i $rint isup`;
+        is_ap_mode=`wl -i $rint ap`;
+        is_hidden=`wl -i $rint closed`;
+
+        if [ "$is_up" == "1" -a "$is_ap_mode" == "1" -a "$is_hidden" == "0" ]; then
+          interface_name=$rint
+          break;
+        fi
+      done;
+    fi
+
+    if [ $2 -gt 15 ];then
+       for rint in $(ifconfig | grep $(get_fh_interface_name 5) | grep -v ".v0 " | awk -F " " '{print $1}'); do
+        is_up=`wl -i $rint isup`;
+        is_ap_mode=`wl -i $rint ap`;
+        is_hidden=`wl -i $rint closed`;
+
+        if [ "$is_up" == "1" -a "$is_ap_mode" == "1" -a "$is_hidden" == "0" ]; then
+          interface_name=$rint
+          break;
+        fi
+      done;
+    fi
+  fi
+  
+  if [ $# -eq 9 ];then
+	set_chanspec $interface_name $2 $3 $4 $9;
+  elif [ $# -eq 10 ];then
+	set_chanspec $interface_name $2 $3 $4 $9 $10;
+  fi
+
+    if [ $2 -lt 15 ]; then
+     sed -i 's/ch_2g=.*/ch_2g='$2'/g' /flash/whw/ai_engine/ai-configs.conf;
+     sed -i 's/bw_2g=.*/bw_2g='$3'/g' /flash/whw/ai_engine/ai-configs.conf;
+     sed -i 's/bonding_2g=.*/bonding_2g='$4'/g' /flash/whw/ai_engine/ai-configs.conf;
+     sed -i 's/name_2g=.*/name_2g='$1'/g' /flash/whw/ai_engine/ai-configs.conf;
+    else
+     sed -i 's/ch_5g=.*/ch_5g='$2'/g' /flash/whw/ai_engine/ai-configs.conf;
+     sed -i 's/bw_5g=.*/bw_5g='$3'/g' /flash/whw/ai_engine/ai-configs.conf;
+     sed -i 's/bonding_5g=.*/bonding_5g='$4'/g' /flash/whw/ai_engine/ai-configs.conf;
+     sed -i 's/name_5g=.*/name_5g='$1'/g' /flash/whw/ai_engine/ai-configs.conf;
+    fi
+
+    echo 1;
+  
+
+else
+  echo 0;
+fi

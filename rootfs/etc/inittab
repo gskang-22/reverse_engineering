@@ -1,0 +1,27 @@
+#
+#	$Id: inittab,v 1.2 2006/04/27 21:40:03 jwessel Exp $
+#
+# Busybox's init uses a different syntax then the normal init.
+# The "-" in -/bin/sh allows job control on /dev/console.
+#
+::sysinit:/etc/init.d/rcS
+ttyS0::respawn:/usr/sbin/vtysh -c
+::shutdown:sh /usr/exe/reboot.as
+::shutdown:echo :: system is shutting down now, disable core dump
+::shutdown:date
+::shutdown:echo "" > /proc/sys/kernel/core_pattern
+::shutdown:echo :: sending SIGTERM to all
+::shutdown:/bin/kill -s TERM -1
+::shutdown:echo :: sending SIGKILL to all
+::shutdown:/bin/kill -s KILL -1
+::shutdown:sleep 1
+::shutdown:fuser -m -k /logs
+::shutdown:/bin/umount /logs
+::shutdown:echo :: umount logs finished
+::shutdown:fuser -m -k /configs
+::shutdown:/bin/umount /configs
+::shutdown:echo :: umount configs finished
+::shutdown:/bin/umount -a
+::shutdown:echo :: umount all volumes finished
+
+::restart:/sbin/init

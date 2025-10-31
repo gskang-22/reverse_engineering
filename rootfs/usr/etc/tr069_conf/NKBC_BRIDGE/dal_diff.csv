@@ -1,0 +1,168 @@
+CustomerID,NKBC_BRIDGE,,,,
+BaseOfVersionTree,version000000,,,,
+FilteredPrefix,X_ASB,X_CT,,,
+,,,,,
+#FilteredPrefix,X_ASB_COM, X_CT-COM,,,      (you can set at most 5 filtered values)
+# Internal para name, Action, External para name, Need Conversion, Conversion function name, External RW attr
+,,,,,
+# if parent is the same, action R shall be used, as below,,,
+# InternetGatewayDevice.X_CT-COM_UserInfo.,R,InternetGatewayDevice.X_CU_UserInfo.,,,
+,,,,,
+# if parent is different, action M shall be used, as below,,,
+# InternetGatewayDevice.X_CT-COM_UplinkQoS.,M,InternetGatewayDevice.X_CU_Function.UplinkQoS.,,,
+,,,,,
+# Permanent rules,,,,,
+# please keep this part rules unchanged since they are for following legacy policy  displaying private parameters with private prefix on ITMS.,,,,,
+# following are paramters displayed on ITMS with private prefix in 5301. ,,,,,
+# X_ASB_COM_DmzIpHostCfg,,,,,
+# X_ASB_COM_DmzPppHostCfg,,,,,
+# X_ASB_COM_EthPort,,,,,
+# X_ASB_COM_ExternalPortEnd,,,,,
+# X_ASB_COM_InternalPortEnd,,,,,
+# X_CT-COM_WANGponLinkConfig,,,,,
+# X_ASB_COM_AppName,,,,,
+# X_ALU_OntOpticalParam (not CT/ASB prefix  ignore),,,,,
+# X_CT-COM_ServiceList (follow legacy convert rule),,,,,
+# X_ASB_COM_IGMPCfg (follow legacy convert rule),,,,,
+# X_CT-COM_ChannelWidth (follow legacy convert rule),,,,,
+# VOICE (follow legacy convert rules),,,,,
+# Please retain X_ALU-COM_KeepAliveTime for any new OPID DAL conversion files created in future,,,,,
+InternetGatewayDevice.X_ALU-COM_GPON.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_RGCounters.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_ReversePower.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_EtsiPse.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_DPUReversePowerStatus.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_PwrMngtCfg.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_UPSAlarm.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_AutoPortBind.,D,,,,RW
+InternetGatewayDevice.Security.,D,,,,RW
+InternetGatewayDevice.GRE.,D,,,,RW
+InternetGatewayDevice.UserInterface.,D,,,,RW
+InternetGatewayDevice.CtLanPortsBindCfg.,D,,,,RW
+InternetGatewayDevice.Layer2Bridging.,D,,,,RW
+InternetGatewayDevice.Firewall.,D,,,,RW
+InternetGatewayDevice.QueueManagement.,D,,,,RW
+InternetGatewayDevice.LANConfigSecurity.,D,,,,RW
+InternetGatewayDevice.IPPingDiagnostics.,D,,,,RW
+InternetGatewayDevice.TraceRouteDiagnostics.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_VPNDevice.,D,,,,RW
+InternetGatewayDevice.Layer3Forwarding.,D,,,,RW
+InternetGatewayDevice.TrustedNetwork.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_TrustedRemoteServer.,D,,,,RW
+InternetGatewayDevice.X_ALU_OntOpticalParam.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_SmartHome.,D,,,,RW
+InternetGatewayDevice.Services.,D,,,,RW
+InternetGatewayDevice.NetMonitorDiagnostics.,D,,,,RW
+InternetGatewayDevice.DownloadDiagnostics.,D,,,,RW
+InternetGatewayDevice.UploadDiagnostics.,D,,,,RW
+InternetGatewayDevice.ServerSelectionDiagnostics.,D,,,,RW
+InternetGatewayDevice.UDPEchoDiagnostics.,D,,,,RW
+InternetGatewayDevice.Capabilities.,D,,,,RW
+InternetGatewayDevice.UDPEchoConfig.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_EthOamIEEE8021ag1731Cfg.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_RFVideoDevice.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_PreventPortScan.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_UplinkManagement.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_EthOamIEEE8023ahCfg.,D,,,,RW
+InternetGatewayDevice.UPnP.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_Analytics.,D,,,,RW
+InternetGatewayDevice.NSLookupDiagnostics.,D,,,,RW
+InternetGatewayDevice.BulkData.,D,,,,RW
+InternetGatewayDevice.X_ALU-COM_BulkData.,D,,,,RW
+,,,,,
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_ASB_COM_KeepAliveTime,M,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_ALU-COM_KeepAliveTime,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_ASB_COM_DmzIpHostCfg.,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_ASB_COM_DmzIpHostCfg.,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_ASB_COM_DmzIpHostCfg.DmzHostDescription,M,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_ASB_COM_DmzIpHostCfg.DmzHostDescription,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_ASB_COM_DmzIpHostCfg.InternalClient,M,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_ASB_COM_DmzIpHostCfg.InternalClient,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_ASB_COM_DmzIpHostCfg.DmzEnabled,M,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_ASB_COM_DmzIpHostCfg.DmzEnabled,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_ASB_COM_DmzPppHostCfg.,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_ASB_COM_DmzPppHostCfg.,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_ASB_COM_DmzPppHostCfg.DmzHostDescription,M,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_ASB_COM_DmzPppHostCfg.DmzHostDescription,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_ASB_COM_DmzPppHostCfg.InternalClient,M,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_ASB_COM_DmzPppHostCfg.InternalClient,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_ASB_COM_PppoeSessionid,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.PPPoESessionID,,,R
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_ASB_COM_DmzPppHostCfg.DmzEnabled,M,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_ASB_COM_DmzPppHostCfg.DmzEnabled,,,RW
+#InternetGatewayDevice.X_ASB_COM_EthPort.,R,InternetGatewayDevice.X_ASB_COM_EthPort.,,,RW
+#InternetGatewayDevice.X_ASB_COM_EthPort.EthPortNum,M,InternetGatewayDevice.X_ASB_COM_EthPort.EthPortNum,,,RW
+#InternetGatewayDevice.X_ASB_COM_EthPort.EthPort.{i}.isTr069Domain,M,InternetGatewayDevice.X_ASB_COM_EthPort.EthPort.{i}.isTr069Domain,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.PortMapping.{i}.X_ASB_COM_ExternalPortEnd,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.PortMapping.{i}.ExternalPortEndRange,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.PortMapping.{i}.X_ASB_COM_ExternalPortEnd,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.PortMapping.{i}.ExternalPortEndRange,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.PortMapping.{i}.X_ASB_COM_InternalPortEnd,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.PortMapping.{i}.X_ASB_COM_InternalPortEnd,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.PortMappingNumberOfEntries,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.PortMappingNumberOfEntries,,,R
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_ASB_COM_DefaultGateway,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.DefaultGateway,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.PortMapping.{i}.X_ASB_COM_InternalPortEnd,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.PortMapping.{i}.X_ASB_COM_InternalPortEnd,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.PortMappingNumberOfEntries,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.PortMappingNumberOfEntries,,,R
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_ALU_COM_AutoDNSServers,D,,,,
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_ALU_COM_TR69DNSServers,D,,,,
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_ALU_COM_AutoDNSServers,D,,,,
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_ALU_COM_TR69DNSServers,D,,,,
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.ShapingRate,D,,,,
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.ShapingBurstSize,D,,,,
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.ShapingRate,D,,,,
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.ShapingBurstSize,D,,,,
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.X_CT-COM_WANGponLinkConfig.,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.X_CT-COM_WANGponLinkConfig.,,,RW
+#InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.X_CT-COM_WANGponLinkConfig.P_802-1pMark,M,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.X_CT-COM_WANGponLinkConfig.802_1pMark,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.X_CT-COM_WANGponLinkConfig.VLANIDMark,M,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.X_CT-COM_WANGponLinkConfig.VLANIDMark,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.X_CT-COM_WANGponLinkConfig.Mode,M,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.X_CT-COM_WANGponLinkConfig.Mode,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.X_CT-COM_WANGponLinkConfig.Enable,M,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.X_CT-COM_WANGponLinkConfig.Enable,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.PortMapping.{i}.X_ASB_COM_AppName,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.PortMapping.{i}.X_ASB_COM_AppName,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.PortMapping.{i}.X_ASB_COM_AppName,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.PortMapping.{i}.X_ASB_COM_AppName,,,RW
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_D0542D_ServiceList,D,,,,
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnectionNumberOfEntries,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnectionNumberOfEntries,,,R
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_D0542D_ServiceList,D,,,,
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnectionNumberOfEntries,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnectionNumberOfEntries,,,R
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_CT-COM_ServiceList,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_D0542D_ServiceList,,,
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_CT-COM_ServiceList,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_D0542D_ServiceList,,,
+InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_CT-COM_ChannelWidth,R,InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_ALU_COM_ChannelWidth,,,
+InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_ASB_COM_BaseCfg_GlobalMaxAssoc,R,InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_ALU-COM_BaseCfg_GlobalMaxAssoc,,,RW
+InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_ASB_COM_VirtualIfCfg_MaxAssoc,R,InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_ALU-COM_VirtualIfCfg_MaxAssoc,,,RW
+InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.PreSharedKey.{i}.KeyPassphrase,D,,,,
+InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.PreSharedKey.{i}.PreSharedKey,R,InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.PreSharedKey.{i}.KeyPassphrase,,,RW
+InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.PreSharedKey.{i}.X_ASB_COM_PreSharedKey,R,InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.PreSharedKey.{i}.PreSharedKey,,,RW
+InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.BeaconType,D,,,,
+InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.X_ASB_COM_BeaconType,R,InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.BeaconType,,,RW
+,,,,,
+#WAN/LAN,,,,,
+InternetGatewayDevice.WANDevice.{i}.WANConnectionNumberOfEntries,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionNumberOfEntries,,,R
+InternetGatewayDevice.LANDevice.{i}.LANHostConfigManagement.X_ALU_EnableDHCPdOpt125,D,,,,
+InternetGatewayDevice.LANDevice.{i}.LANHostConfigManagement.X_ALU_DHCPdOpt125Value,D,,,,
+InternetGatewayDevice.LANDevice.{i}.LANHostConfigManagement.X_ALU-COM_EnableDHCPv6ServerOpt17,D,,,,
+,,,,,
+,,,,,
+# UserInfo,,,,,
+InternetGatewayDevice.DeviceInfo.X_CT-COM_ServiceManage.,R,InternetGatewayDevice.DeviceInfo.X_ALU-COM_ServiceManage.,,,RW
+InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.Active,R,InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.Active,,,R
+InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.AddressSource,R,InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.AddressSource,,,R
+InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.ClientID,R,InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.ClientID,,,R
+InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.HostName,R,InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.HostName,,,R
+InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.InterfaceType,R,InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.InterfaceType,,,R
+InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.IPAddress,R,InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.IPAddress,,,R
+InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.Layer2Interface,R,InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.Layer2Interface,,,R
+InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.LeaseTimeRemaining,R,InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.LeaseTimeRemaining,,,R
+InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.MACAddress,R,InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.MACAddress,,,R
+InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.UserClassID,R,InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.UserClassID,,,R
+InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.VendorClassID,R,InternetGatewayDevice.LANDevice.{i}.Hosts.Host.{i}.VendorClassID,,,R
+InternetGatewayDevice.LANDevice.{i}.Hosts.HostNumberOfEntries,R,InternetGatewayDevice.LANDevice.{i}.Hosts.HostNumberOfEntries,,,R
+,,,,,
+#Management,,,,,
+InternetGatewayDevice.ManagementServer.ManageableDevice.{i}.X_ALU-COM_MACAddress,D,,,,
+InternetGatewayDevice.ManagementServer.ManageableDevice.{i}.X_ALU-COM_LanPortIdFlag,D,,,,
+,,,,,
+,,,,,
+#Management,,,,,
+InternetGatewayDevice.ManagementServer.ConnectionRequestURL,R,InternetGatewayDevice.ManagementServer.ConnectionRequestURL,,,R
+#DnsProxyCfg,,,,,
+#InternetGatewayDevice.X_ASB_COM_AppCfg.DnsProxyCfg.Enable,M,InternetGatewayDevice.X_ALU-COM_AppCfg.DnsProxyCfg.Enable,,,RW
+,,,,,
+#WANIPConnection/WANPPPConnection,,,,,
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.ConnectionStatus,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.ConnectionStatus,,,R
+InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.ConnectionStatus,R,InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.ConnectionStatus,,,R
+,,,,,
+#Time,,,,,
+InternetGatewayDevice.Time.LocalTimeZone,R,InternetGatewayDevice.Time.LocalTimeZone,,,R
+InternetGatewayDevice.Time.LocalTimeZoneName,D,,,,
+InternetGatewayDevice.Time.DaylightSavingsUsed,D,,,,
+InternetGatewayDevice.Time.DaylightSavingsStart,D,,,,
+InternetGatewayDevice.Time.DaylightSavingsEnd,D,,,,
+InternetGatewayDevice.Time.X_CT-COM_NTPSyncInterval,D,,,,
+InternetGatewayDevice.Time.X_CT-COM_NTPServerType,D,,,,
+InternetGatewayDevice.Time.X_ALU-COM_LocalTimeZone,R,InternetGatewayDevice.Time.LocalTimeZoneName,,,
+InternetGatewayDevice.Time.X_ALU-COM_LocalTimeZone,D,,,,

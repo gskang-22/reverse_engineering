@@ -1,0 +1,12 @@
+#!/bin/sh
+
+case "$1" in
+	"off" )
+		touch /configs/coredump_disabled ;;
+	"on" )
+		rm -f /configs/coredump_disabled ;;
+	* )
+		echo "Usage: coredump on|off"
+		echo -n "Current is "
+		[ -e /configs/coredump_disabled ] && echo off || echo on
+esac

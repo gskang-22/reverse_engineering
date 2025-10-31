@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# $1: pppXXX
+# $2: wanX.XXX
+
+IFNAME=$1
+DEVICE=$2
+LOCALIP=$4
+
+idx=`echo $DEVICE | cut -c 4`
+
+echo "$LOCALIP $DEVICE $IFNAME" > "/proc/sys/net/netfilter/bl_rgw_wan2subnet/$idx"

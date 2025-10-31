@@ -1,0 +1,45 @@
+#!/bin/sh
+
+START=90
+USE_PROCD=1
+
+start_service() {
+    serialNumber=`ritool dump | grep G984Serial | cut -d':' -f2`
+    pin=`echo -n $serialNumber | sha256sum | cut -d' ' -f1`
+    mac=`ifconfig br0 | awk '/HWaddr/ {print $5}'`
+    
+    [ -e /etc/config/claim ] || {
+
+	# As config file does not exist, create it
+	touch /etc/config/claim
+	
+	#if env.var does not exist, create it
+	uci set claim.claim=claim
+	#uci set claim.claim.claimed=0
+	uci set claim.claim.pin=$pin
+	uci set claim.claim.mac=$mac
+	
+	uci commit claim
+    }
+}
+
+case $1 in
+
+start)
+	# Do this to make sure SSID is set before starting Unium, otherwise WDS doesn't converge
+	# should be ok to remove once we detect SSID change events
+        #sleep 20
+        start_service
+        break
+        ;;
+restart)
+        break;
+        ;;
+
+stop)
+        break
+        ;;
+
+#*)
+#	usage
+esac

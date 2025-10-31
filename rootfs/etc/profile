@@ -1,0 +1,32 @@
+# /etc/profile: system-wide .profile file for the Bourne shell (sh(1))
+# and Bourne compatible shells (bash(1), ksh(1), ash(1), ...).
+
+## the default system profile
+export PATH="/sbin:/usr/sbin:/usr/local/bin:/usr/bin:/bin:/bcm:/bcm/script:/bcm/bin:/usr/exe:/usr/exe/whw/bin"
+export TERM=vt100
+export PS1="[\u@\h: \W]\\$ "
+export PS2='> '
+umask 022
+
+## the default dynamic library profile
+#adding dynamic library search PATH, add by xufuguo, 20120417
+export LD_LIBRARY_PATH=/bcm/bin:/lib/gpl:$LD_LIBRARY_PATH
+export BCM_CONFIG_FILE=/bcm/script/config.bcm
+#adding dynamic library serach PATH, added by liu tao, 20140609
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib/public:/lib/private:/usr/exe/whw/lib
+
+## the popular alias profile
+# Adding default "-C 1 -W 1" parameter for tcpdump, to keep it from swallowing up all the free memory.
+alias tcpdump='tcpdump -C 1 -W 1'
+alias ./tcpdump='./tcpdump -C 1 -W 1'
+
+#for setting environment for new users, add by xufuguo, 20120420
+if test -f ~/.bashrc; then
+    source ~/.bashrc
+fi
+
+#add for bdmf shell
+if [ -x /bcm/bin/bdmf_shell ]; then
+    /bcm/bin/bdmf_shell -c init | while read a b ; do echo $b ; done > /tmp/bdmf_sh_id
+fi
+

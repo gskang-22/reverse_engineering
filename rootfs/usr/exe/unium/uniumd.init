@@ -1,0 +1,617 @@
+#!/bin/sh
+
+#set -x
+
+export PATH=$PATH:/sbin
+UNIUM_DEVICE_MODE="/tmp/unium_device_mode"
+ONBOARDING_MAC_FILE="/configs/onboarding.txt"
+PRESETS_DB_FILE="/configs/uniumd/preset_macs.db"
+REST_LISTEN_FILE="/configs/uniumd/rest_listen_address"
+REST_PORT_FILE="/configs/uniumd/rest_listen_port"
+CUSTOM_LOG_LEVEL_FILE="/flash/set_unium_loglevel"
+DISABLE_ZPL_FILE="/configs/uniumd/disable_zpl"
+NO_WAN_IN_BRIDGE_FILE="/flash/no_need_wan_port_in_bridge"
+RESET_COVERAGE_DATA_FILE="/configs/uniumd/reset_coverage_data"
+COVERAGE_DATA_DIR=/flash/uniumd-coverage-data
+ENABLE_PROBE_RESPONSE_BLOCKING_FILE="/flash/enable_probe_response_blocking"
+ENABLE_24GHZ_BACKHAUL=1
+ENABLE_5GHZ_BACKHAUL=1
+WIFI_24G_ADAPTER="wl1"
+WIFI_5G_ADAPTER="wl0"
+WORK_MODE=
+WORK_ROLE=
+
+### start auto-detect of network interfaces 
+get_itf_5g()
+{
+    ch_2g=`wl -i wl1 channels | cut -d ' ' -f 1`
+    ch_5g=`wl -i wl0 channels | cut -d ' ' -f 1`
+    if [ $ch_2g -ge 1 -a $ch_2g -le 14 -a $ch_5g -ge 36 -a $ch_5g -le 165 ]; then
+        echo "wl0" 
+    else
+        echo "wl1"
+    fi
+}
+
+get_itf_2g()
+{
+    if [ $(get_itf_5g) == "wl0" ]; then
+        echo "wl1"
+    else
+        echo "wl0"
+    fi
+}
+
+WIFI_5G_ADAPTER=$(get_itf_5g)
+WIFI_24G_ADAPTER=$(get_itf_2g)
+
+ETHER_PHYS=$(ip link show | grep ": eth[0-9]:" | awk -F": " '{print $2}')
+ETHER_VIFS=$(ip link show | grep ": eth[0-9].0:" | awk -F": " '{print $2}')
+
+ETHER_WAN_PHYS="wan0_eth"
+ETHER_WAN_VIFS="veip0"
+### end auto-detect network interfaces 
+
+eval $(cat /usr/etc/buildinfo)
+
+WIFI_24G_BACKHAUL_SSID="${WIFI_24G_ADAPTER}.4"
+WIFI_5G_BACKHAUL_SSID="${WIFI_5G_ADAPTER}.4"
+PID_FILE="/var/run/uniumd-${WIFI_5G_ADAPTER}.pid"
+
+if [ -f "$REST_PORT_FILE" ]; then
+	REST_PORT=`cat "$REST_PORT_FILE"`
+else
+	REST_PORT="8090"
+fi
+
+if [ -f "$DISABLE_ZPL_FILE" ] ; then
+	echo "disabling ZPL"
+	wl -i ${WIFI_5G_BACKHAUL_SSID} pspretend_threshold 0
+	wl -i ${WIFI_5G_BACKHAUL_SSID} pspretend_retry_limit 0
+
+	wl -i ${WIFI_24G_BACKHAUL_SSID} pspretend_threshold 0
+	wl -i ${WIFI_24G_BACKHAUL_SSID} pspretend_retry_limit 0
+else
+	echo -n
+fi
+
+if [ -f "$CUSTOM_LOG_LEVEL_FILE" ] ; then
+	DEFAULT_LOG_LEVEL=$(cat "$CUSTOM_LOG_LEVEL_FILE")
+else
+	DEFAULT_LOG_LEVEL=notice
+	echo -n
+fi
+
+if [ ! -z "$DEFAULT_LOG_LEVEL" ] ; then
+	LOG_LEVEL="$DEFAULT_LOG_LEVEL"
+else
+	LOG_LEVEL="info"
+fi
+
+if [ -f "/configs/uniumd/disable_24ghz_backhaul" ] ; then
+	ENABLE_24GHZ_BACKHAUL=0
+fi
+
+if [ -f "/configs/uniumd/disable_5ghz_backhaul" ] ; then
+	ENABLE_5GHZ_BACKHAUL=0
+fi
+
+# enable 5Ghz backhaul by default if somehow both are configured as disabled
+if [ "$ENABLE_24GHZ_BACKHAUL" == 0 -a "$ENABLE_5GHZ_BACKHAUL" == 0 ] ; then
+	ENABLE_5GHZ_BACKHAUL=1
+fi
+
+enable_80211r=$(wl -i ${WIFI_5G_ADAPTER} fbt)
+if [ "$enable_80211r" == "1" ] ; then
+	ENABLE_80211R=1
+	echo "80211R is enabled"
+fi
+
+config_enhanced_roaming() {
+	enhanced=$(cfgcli -g InternetGatewayDevice.X_ALU-COM_Wifi.EnhancedRoaming | cut -d "=" -f2)
+	/sbin/curl -s -X PUT -H "Content-Type: application/json" -d "{ \"enable\" : $enhanced }" http://localhost:${REST_PORT}/1/rrm-action
+}
+
+starhub_customize() {
+	OPID=$(ritool get OperatorID|cut -d: -f2|sed 's/[ \r\n]//g')
+	if [ $OPID == "BSGS" ]; then
+		/sbin/curl -s -X PUT  -H "Content-Type: application/json" -d "{ \"value1\" : 65, \"value2\" : 130}" http://localhost:${REST_PORT}/1/backhaul_quality_threshold
+	fi
+}
+
+is_gateway()
+{
+	if [ -f "$UNIUM_DEVICE_MODE" ] ; then
+		gw=$(cat "$UNIUM_DEVICE_MODE")
+		if [ "$gw" == "RGW" ] ; then
+			echo yes
+		else
+			echo no
+		fi
+	else
+		if [ "$WORK_MODE" == "RGW" -o "$WORK_ROLE" == "Controller" ] ; then
+		    echo yes
+		else
+		    echo no
+		fi
+	fi
+}
+
+authorize_gw() {
+	sleep 15
+
+	if [ -f "$ONBOARDING_MAC_FILE" -a ! -f "$PRESETS_DB_FILE" ] ; then
+		if [ "$ENABLE_5GHZ_BACKHAUL" == 1 ]; then
+			AUTH_MAC=$(cat "$ONBOARDING_MAC_FILE" | grep "5," | cut -d ',' -f2 | sed -e "s/:/-/g")
+			/sbin/curl -is -X PUT  -H "Content-Type: application/json" -d "{ \"mac-address\" : \"$AUTH_MAC\" }" http://localhost:${REST_PORT}/1/authenticated-devices 2>/dev/null 1>&2
+		fi
+
+		if [ "$ENABLE_24GHZ_BACKHAUL" == 1 ]; then
+			AUTH_MAC_2=$(cat "$ONBOARDING_MAC_FILE" | grep "2.4," | cut -d ',' -f2 | sed -e "s/:/-/g")
+			if [ "$AUTH_MAC_2" != "" ]; then
+				/sbin/curl -is -X PUT  -H "Content-Type: application/json" -d "{ \"mac-address\" : \"$AUTH_MAC_2\", \"medium\" : \"wifi-24\", \"radio-number\" : \"0\" }" http://localhost:${REST_PORT}/2/authenticated-devices 2>/dev/null 1>&2
+			fi
+		fi
+	fi
+
+}
+
+self_authorize() {
+
+	if [ "$ENABLE_5GHZ_BACKHAUL" == 1 ]; then
+		AUTH_MAC=$(wl -i ${WIFI_5G_BACKHAUL_SSID} status | grep BSSID | awk '{print $2}' | sed -e "s/:/-/g")
+		if [ "$AUTH_MAC" != "00-00-00-00-00-00" ] ; then
+			/sbin/curl -is -X PUT  -H "Content-Type: application/json" -d "{ \"mac-address\" : \"$AUTH_MAC\" }" http://localhost:${REST_PORT}/1/authenticated-devices 2>/dev/null 1>&2
+		fi
+	fi
+
+	if [ "$ENABLE_24GHZ_BACKHAUL" == 1 ]; then
+		AUTH_MAC_2=$(wl -i ${WIFI_24G_BACKHAUL_SSID} status | grep BSSID | awk '{print $2}' | sed -e "s/:/-/g")
+		if [ "$AUTH_MAC_2" != "00-00-00-00-00-00" ] ; then
+			/sbin/curl -is -X PUT  -H "Content-Type: application/json" -d "{ \"mac-address\" : \"$AUTH_MAC_2\", \"medium\" : \"wifi-24\", \"radio-number\" : \"0\" }" http://localhost:${REST_PORT}/2/authenticated-devices 2>/dev/null 1>&2
+		fi
+	fi
+}
+
+authorize_preset_devices() {
+	sleep 15
+	
+	#if [ -f "$ONBOARDING_MAC_FILE" -a ! -f "$PRESETS_DB_FILE" ] ; then
+	if [ -f "$ONBOARDING_MAC_FILE" ] ; then
+		while read line
+		do
+			BAND=$(echo "$line" | awk -F ',' '{print $1}')
+			AUTH_MAC=$(echo "$line" | awk -F ',' '{print $2}' | sed -e's/:/-/g')
+			
+			if [ "$ENABLE_5GHZ_BACKHAUL" == 1 -a "$BAND" == "5" -a "$AUTH_MAC" != "" -a "$AUTH_MAC" != "00-00-00-00-00-00" ] ; then
+				/sbin/curl -is -X PUT  -H "Content-Type: application/json" -d "{ \"mac-address\" : \"$AUTH_MAC\" }" http://localhost:${REST_PORT}/1/authenticated-devices 2>/dev/null 1>&2
+			elif [ "$ENABLE_24GHZ_BACKHAUL" == 1 -a "$BAND" == "2.4" -a "$AUTH_MAC" != "" -a "$AUTH_MAC" != "00-00-00-00-00-00" ] ; then
+				/sbin/curl -is -X PUT  -H "Content-Type: application/json" -d "{ \"mac-address\" : \"$AUTH_MAC\", \"medium\" : \"wifi-24\", \"radio-number\" : \"0\" }" http://localhost:${REST_PORT}/2/authenticated-devices 2>/dev/null 1>&2
+			fi		
+		done < $ONBOARDING_MAC_FILE
+	fi
+	
+	gateway=$( is_gateway )
+	if [ "$gateway" == "yes" ] ; then
+		self_authorize
+	fi
+
+	config_enhanced_roaming
+
+	starhub_customize
+}
+
+
+add_ethernets_to_bridge() {
+
+	if [ "$WORK_MODE" == "AP_Bridge" -o "$WORK_ROLE" == "Agent" ] ; then
+		if [ ! -f "$NO_WAN_IN_BRIDGE_FILE" ] ; then
+			for i in $ETHER_WAN_VIFS ; do
+				brctl addif br0 $i 2>/dev/null 1>&2
+			done
+		fi
+	fi
+
+	for i in $ETHER_VIFS ; do
+		brctl addif br0 $i 2>/dev/null 1>&2
+	done
+}
+
+down_ethernets() {
+	#workaround for bridge code that floods unicast
+	if [ -f /sys/class/net/br0/bridge/unium_present ] ; then
+		echo 1 > /sys/class/net/br0/bridge/unium_present
+	fi
+
+	if [ "$WORK_MODE" == "AP_Bridge" -o "$WORK_ROLE" == "Agent" ] ; then
+		if [ ! -f "$NO_WAN_IN_BRIDGE_FILE" ] ; then
+			for i in $ETHER_WAN_VIFS ; do
+				/sbin/ifconfig $i down
+	    		done
+		fi
+	fi
+
+	for i in $ETHER_VIFS ; do
+		/sbin/ifconfig $i down
+	done
+
+	add_ethernets_to_bridge
+}
+
+up_ethernets() {
+	sleep 2
+
+	if [ "$WORK_MODE" == "AP_Bridge" -o "$WORK_ROLE" == "Agent" ] ; then
+		if [ ! -f "$NO_WAN_IN_BRIDGE_FILE" ] ; then
+			for i in $ETHER_WAN_VIFS ; do
+				/sbin/ifconfig $i up
+			done
+		fi
+	fi
+
+	# This should be longer than ARP timeouts (that way ARPs will refresh the FDB entries for quiet clients). 
+	# Unfortunately ARP timeouts are all over the map. The default for ARP on Linux is 60s, Windows Vista and later 
+	# up to 45s, and MAC OSs 20 mins (I think). So we'll play it safe and use a timeout that should give us plenty
+	# of leeway.
+	brctl setageing br0 3600	# 1 hour
+
+	for i in $ETHER_VIFS ; do
+		/sbin/ifconfig $i up
+	done
+}
+
+rename_inside_ssids() {
+	SSID=$(cfgcli -g InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.SSID | cut -d "=" -f 2)
+	#5Ghz hidden ssid
+	if (wl -i ${WIFI_5G_BACKHAUL_SSID} status 2>/dev/null 1>&2 ) ; then
+		INSIDE_SSID=$( echo $SSID-5NokiaWDS | cut -c 1-31 )
+		wl -i ${WIFI_5G_BACKHAUL_SSID} ssid $INSIDE_SSID
+	fi
+
+	#24Ghz hidden ssid
+	if (wl -i ${WIFI_24G_BACKHAUL_SSID} status 2>/dev/null 1>&2 ) ; then
+		INSIDE_SSID=$( echo $SSID-24NokiaWDS | cut -c 1-31 )
+		wl -i ${WIFI_24G_BACKHAUL_SSID} ssid $INSIDE_SSID
+	fi
+}
+
+is_backhaul_ssid_ready() {
+	BAND=$1
+	if [ "$BAND" = "24G" ] ; then
+		IS_FEATURE_ENABLE=$ENABLE_24GHZ_BACKHAUL
+		BACKHAUL_SSID=$WIFI_24G_BACKHAUL_SSID
+		DB_SSID_FLAG="SSID2G"
+	else
+		IS_FEATURE_ENABLE=$ENABLE_5GHZ_BACKHAUL
+		BACKHAUL_SSID=$WIFI_5G_BACKHAUL_SSID
+		DB_SSID_FLAG="SSID5G"
+	fi
+	
+	if [ "$IS_FEATURE_ENABLE" = "1" ] ; then
+		EXPECTED_SSID=$(cfgcli -G X_ALU-COM_MESH_WDSHideSSID. | grep -i $DB_SSID_FLAG | awk -F ' ' '{print $3}')
+		CURRENT_SSID=$(wl -i $BACKHAUL_SSID status | grep "^SSID" | awk -F '"' '{print $2}')
+
+		if [ "$EXPECTED_SSID" = "$CURRENT_SSID" -a "$CURRENT_SSID" != "" ] ; then
+			echo "yes"
+		else
+			echo "no"
+		fi
+	else
+		echo "yes"
+	fi
+}
+
+is_all_backhaul_ssid_ready() {
+	if [ "$ENABLE_24GHZ_BACKHAUL" = "1" -a "$ENABLE_5GHZ_BACKHAUL" = "1" ] ; then
+		IS_WIFI_24G_READY=$(is_backhaul_ssid_ready 24G)
+		IS_WIFI_5G_READY=$(is_backhaul_ssid_ready 5G)
+		if [ "$IS_WIFI_24G_READY" = "yes" -a "$IS_WIFI_5G_READY" = "yes" ] ; then
+			echo "yes"
+		else
+			echo "no"
+		fi
+	elif [ "$ENABLE_24GHZ_BACKHAUL" = "1" ] ; then
+		IS_WIFI_24G_READY=$(is_backhaul_ssid_ready 24G)
+		if [ "$IS_WIFI_24G_READY" = "yes" ] ; then
+			echo "yes"
+		else
+			echo "no"
+		fi
+	elif [ "$ENABLE_5GHZ_BACKHAUL" = "1" ] ; then
+		IS_WIFI_5G_READY=$(is_backhaul_ssid_ready 5G)
+		if [ "$IS_WIFI_5G_READY" = "yes" ] ; then
+			echo "yes"
+		else
+			echo "no"
+		fi
+	else
+		echo "yes"
+	fi
+}
+
+stop_unium() {
+        if test -n "$(find /var/run -maxdepth 1 -name 'uniumd*.pid' -print)"
+        then
+        for f in /var/run/uniumd*.pid
+                do
+                        race=0
+                        PID=$(cat $f)
+                        echo "Stopping uniumd service $PID..." >&2
+                        kill -15 "$PID"
+
+                        while [ -d /proc/$PID ] && [ -z `grep -s zombie /proc/$PID/status` ] && [ $race -lt 60 ]; do
+                                echo "Waiting on uniumd service $PID stopping..." >&2
+                                sleep 1
+
+                                race=$(($race + 1))
+                        done
+
+                         # Remove PID file just in case to clean things up
+                         rm -f $f 2> /dev/null
+                         echo "uniumd service stopped" >&2
+                done
+        fi
+
+        for left in $(ps | grep "{[u]niumd} WATCHDOG" | awk '{print $1}')
+        do
+                PID=$left
+                #echo "Stopping leftover uniumd service $PID..." >&2
+                kill -15 "$PID"
+        done
+}
+
+start_unium() {
+	BIN_PATH=$( dirname $0 )
+	BYPASS_WAIT=$1
+	EXTRA_ARGS=""
+	MODE="--client-steering=${WIFI_5G_ADAPTER} --client-steering=${WIFI_24G_ADAPTER}"
+	MAX_WAIT_TIME=60
+	EXTRA_WAIT=10
+	SUPPRESS_FILE="/flash/suppress_next_startup"
+	PRISTINE_FILE="/flash/pristine_next_startup"
+
+	if [ -f "$PRISTINE_FILE" ] ; then
+		rm -f "$PRISTINE_FILE"
+		echo "Uniumd: found cleanup marker - removing contents of /configs/uniumd"
+		rm -fr /configs/uniumd/*
+		sync
+	fi
+
+	if [ -f "$SUPPRESS_FILE" ] ; then
+		rm -f "$SUPPRESS_FILE"
+		sync
+		echo "Uniumd: found startup suppression marker - skipping starting this time"
+		return 0
+	fi
+
+        if [ -f "$REST_LISTEN_FILE" ]; then
+                LISTEN_ADDR=`cat "$REST_LISTEN_FILE"`
+                echo "Uniumd: found REST address override - will listen on $LISTEN_ADDR instead of 127.0.0.1"
+                EXTRA_ARGS="$EXTRA_ARGS --listen=$LISTEN_ADDR"
+        fi
+
+	if [ "$ENABLE_80211R" == 1 ]; then
+		EXTRA_ARGS="$EXTRA_ARGS --fast-trans"
+	fi
+
+	#find out what the expected SSID is from cfgcli and wait for up-to 30 seconds to see that it's been set
+	count=0
+	while true; do
+		if [ "$BYPASS_WAIT" == "skip_wait" ] ; then
+			echo "Uniumd: Skip check backhaul ssid ready" | logger
+			break
+		fi
+
+		RES=$(is_all_backhaul_ssid_ready)
+ 		if [ "$RES" = "yes" ] ; then
+ 			echo "Uniumd: Correct SSID found, waiting $EXTRA_WAIT seconds for system to stabilize" | logger
+ 			sleep "$EXTRA_WAIT"
+ 			break
+ 		fi
+ 		
+ 		sleep 1
+ 		count=$((count+1))
+		if [ "$count" -ge "$MAX_WAIT_TIME" ] ; then
+			echo "Uniumd: Giving up on waiting for backhaul ssid ready" | logger
+			break
+		fi
+	done
+
+	SERIAL_NUM=$(cfgcli -G InternetGatewayDevice.DeviceInfo. | grep "SerialNumber" | cut -d= -f2 | sed -e 's/ //g;')
+	WORK_MODE=$(cfgcli -g InternetGatewayDevice.X_ALU-COM_Wifi.WorkMode | cut -d "=" -f2)
+	WORK_ROLE=$(cfgcli -g InternetGatewayDevice.X_ALU-COM_Wifi.WorkRole | cut -d "=" -f2)
+
+	echo "In uniumd.init, WORK_MODE=$WORK_MODE, WORK_ROLE=$WORK_ROLE"
+
+	# use unique SSID for backhaul
+	# rename_inside_ssids
+
+    # 802.11r script check & run
+    # if [ -f $BIN_PATH/80211r/80211r_config.sh ] ; then
+    #    $BIN_PATH/80211r/80211r_config.sh &
+	# sleep 5
+    #fi
+    	
+	gateway=$( is_gateway )
+	if [ "$gateway" == "yes" ] ; then
+		EXTRA_ARGS="$EXTRA_ARGS --gateway"
+		#self_authorize &
+		authorize_preset_devices &
+
+		# check if Community Wifi is enabled
+		community=`cfgcli -g InternetGatewayDevice.Services.X_ALU-COM_CommunityWifi.Enable | awk -F'=' '{print $2}'`
+		ifaces=`ls /sys/class/net/br0/brif`
+		if [ "$community" == "true" ] ; then
+			EXTRA_ARGS="$EXTRA_ARGS --pbridge=br_wpub"
+			for i in $ifaces; do
+				# if we found raw wds iface like wds0.4.1 in br0
+				echo $i | grep -q "wds[01]\.4\.[0-9]\{0,\}$" && brctl delif br0 $i
+			done
+		else
+			for i in $ifaces; do
+				# if we found vlan wds iface like wds0.4.1.0 in br0
+				echo $i | grep -q "wds[01]\.4\.[0-9]\{0,\}\.0$" && /bcm/bin/vlanctl --if-delete $i && /bcm/bin/vlanctl --if-delete ${i/\.0/.v2}
+			done
+		fi
+	else
+		#authorize_gw &
+		authorize_preset_devices &
+	fi
+
+	# Remove old code coverage data if requested
+        if [ -f "$RESET_COVERAGE_DATA_FILE" ]; then
+	    if [ -d $COVERAGE_DATA_DIR ]; then
+		echo "Clearing old code coverage data"
+		rm -rf $COVERAGE_DATA_DIR
+	    else
+		echo "Code coverage data is not present"
+	    fi
+            rm -rf $RESET_COVERAGE_DATA_FILE
+	fi
+
+        # If this is a code coverage-instrumented build,
+        # prepare the holding directory for the coverage data
+	# (We have to use strings to test this since we need to accumulate data across installs)
+	GCDA_TEST_PATH=`strings $BIN_PATH/uniumd | grep gcda | grep uniumd | head -1 | sed -e 's|/| |g;'`
+	if [ -n "$GCDA_TEST_PATH" ]; then
+	    # Create a location in which to put coverage data
+	    mkdir -p $COVERAGE_DATA_DIR || true
+
+	    # GCOV_PREFIX tells the gcov generation code where to write the root of the data tree.
+	    #
+	    # GCOV_PREFIX_STRIP tells the gcov generation code how many path elements to remove
+	    # from the front of the original (full) paths embedded in the executable. 
+	    # Data is stored at paths relative to $GCOV_PREFIX.
+	    
+	    export GCOV_PREFIX=$COVERAGE_DATA_DIR
+	    i=0
+	    for s in $GCDA_TEST_PATH ; do
+	        if [[ $s == "uniumd" ]]; then
+	            export GCOV_PREFIX_STRIP=$i
+	            break
+	        fi
+	        i=$(($i+1))
+	    done
+	    if [ -z "$GCOV_PREFIX_STRIP" ]; then
+		echo "Could not figure out how to fix coverage data paths, will strip 6 levels by default"
+		export GCOV_PREFIX_STRIP=6
+	    fi
+	    echo "Prepared to generate code coverage data in $GCOV_PREFIX, stripping $GCOV_PREFIX_STRIP path elements"
+	fi
+	
+	if [ "$ENABLE_24GHZ_BACKHAUL" == 1 ]; then
+		MODE="$MODE --wbackhaul=${WIFI_24G_ADAPTER}"
+	fi
+
+	if [ "$ENABLE_5GHZ_BACKHAUL" == 1 ]; then
+		MODE="$MODE --wbackhaul=${WIFI_5G_ADAPTER}"
+	fi
+
+	#EXTRA_ARGS="$EXTRA_ARGS --log-path=dmesg"
+
+	if [ -f ${PID_FILE} ] && kill -0 $(cat ${PID_FILE}); then
+         echo "uniumd steering service already running on phy0"
+    else
+		if ! [ "$BYPASS_WAIT" == "skip_wait" ] ; then
+			# The interval between ethernet coming up and uniumd coming up can be so long that other
+			# APs think the link is an outside link. So here we bounce ethernet so that other APs
+			# try again to figure out if the link is inside or outside.
+			add_ethernets_to_bridge
+		fi
+
+        if [ -f "$ENABLE_PROBE_RESPONSE_BLOCKING_FILE" ] ; then
+		    if [ ! -z "$(wl -i wl1 rssimac 2>&1 | grep  Unsupported 2>/dev/null)" ]; then
+				echo "probe response blocking not capable device(rssimac) !"
+				wl -i wl0 probresp_sw 0
+            	wl -i wl1 probresp_sw 0
+			else 
+				if [ ! -z "$(wl -i wl0 probresp_rtx_limit 2>&1 | grep  Unsupported 2>/dev/null)" ]; then 
+					echo "probe response blocking not capable device(probresp_rtx_limit) !"
+					wl -i wl0 probresp_sw 0
+            		wl -i wl1 probresp_sw 0
+				else
+					wl -i wl0 probresp_rtx_limit 1 
+					wl -i wl1 probresp_rtx_limit 1
+					wl -i wl0 probresp_sw 1
+					wl -i wl1 probresp_sw 1
+					EXTRA_ARGS="$EXTRA_ARGS --probe-response-blocking"
+				fi
+			fi
+        else
+            echo "probe response blocking feature was disabled, using hw probe response !"
+            wl -i wl0 probresp_sw 0
+            wl -i wl1 probresp_sw 0
+        fi
+
+		down_ethernets
+ 		LD_LIBRARY_PATH=$BIN_PATH $BIN_PATH/uniumd $MODE --bridge=br0 --serial-num="$SERIAL_NUM" --hw-model="$ONT_TYPE" --wireless-chipset=bcm --port=${REST_PORT} --max-rate=${WIFI_5G_ADAPTER}:877 --max-rate=${WIFI_24G_ADAPTER}:200 --persist-dir=/configs/uniumd -P ${PID_FILE} --log-level=$LOG_LEVEL --daemon $EXTRA_ARGS
+		up_ethernets &
+    fi
+}
+
+usage() {
+	echo "Usage: uniumd.init"
+	echo "  -h                      Display this help message."
+	echo "  [-m <mode>] start       Start uniumd [with <RGW|Bridge> mode]" 
+	echo "  stop                    Stop uniumd"
+	echo "  [-m <mode>] restart     Restart uniumd [with <RGW|Bridge> mode]"
+	exit 0
+}
+
+if [ "$1" == "" ] ; then
+	usage
+fi
+
+while getopts ":hm" opt; do
+	case ${opt} in 
+	h )
+		usage
+		;;
+	m )
+		mode=$2
+		if [ "$mode" != "RGW" -a "$mode" != "Bridge" ] ; then
+			echo "uniumd: Invalid mode <$mode> specified, only valid options are RGW and Bridge"
+			exit 1
+		else
+			echo "$mode" > "$UNIUM_DEVICE_MODE"
+			shift 2
+		fi
+		;;
+	\? )
+		echo "Invalid Option: -$OPTARG" 1>&2
+		exit 1
+		;;
+	esac
+	if [ "$mode" != "" ] ; then
+		break
+	fi
+done
+
+if [ "$1" == "" ] ; then
+	usage
+fi
+
+case $1 in
+
+start)
+	# Do this to make sure SSID is set before starting Unium, otherwise WDS doesn't converge
+	# should be ok to remove once we detect SSID change events
+        #sleep 20
+        start_unium
+        break
+        ;;
+restart)
+        stop_unium
+        sleep 1
+        start_unium skip_wait
+        break;
+        ;;
+
+stop)
+        stop_unium
+        break
+        ;;
+
+*)
+	usage
+esac

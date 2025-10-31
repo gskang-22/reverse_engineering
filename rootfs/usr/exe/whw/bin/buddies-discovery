@@ -1,0 +1,63 @@
+#!/bin/sh
+#@author Erma Perenda - erma.1.perenda@nokia-sbell.com
+#This shell script implements the budies discovery 
+
+  . functions
+
+  active_5g_radio="";
+  my_current_channel=0;
+  my_ssid="";
+  my_bssid="";
+  bw_5g=80;
+
+  for rint in $(ifconfig | grep $(get_bh_interface_name 5) | grep -v ".v0 " | awk -F " " '{print $1}'); do
+      is_up=`wl -i $rint isup`;
+      is_ap_mode=`wl -i $rint ap`;
+      is_hidden=`wl -i $rint closed`;
+
+      if [ "$is_up" == "1" -a "$is_ap_mode" == "1" ]; then
+        active_5g_radio=$rint
+        my_ssid="$my_ssid "`wl -i $rint ssid | awk -F ": " '{gsub("\"","",$2);print $2}'`;
+        my_bssid="$my_bssid,"`wl -i $rint bssid`;
+        my_current_channel=$(get_current_channel $rint)
+		#`wl -i $rint channel | grep "mac channel" | awk -F " " '{printf "%d",$4}'`;
+        bw_5g=`wl -i $rint status | grep Chanspec | awk -F " " '{gsub("MHz","",$5); print $5;}'`;
+      fi
+
+  done
+
+  if [ $((my_current_channel+0)) -lt 149 -a $((my_current_channel+0)) -gt 48 ]; then
+    check_non_dfs=`wl -i $active_5g_radio chan_info | grep " 48"`;
+    nondfs_5g=48;
+    if [ -z "$check_non_dfs" ]; then
+      nondfs_5g=161;
+    fi
+      
+    wl -i $active_5g_radio csa 1 5 "$nondfs_5g"/"$bw_5g"; 
+    sleep 5 ;
+  fi
+
+
+  scan_re=`wl -i $active_5g_radio scan -t passive -p 250 -s $my_ssid`;
+  sleep 8;
+
+  candidates='{"my_channel":'$my_current_channel',"buddies":[ ';
+  candidates=$candidates`wl -i $active_5g_radio  scanresults | awk -F " " '
+   BEGIN {OFS=""}
+   
+   /SSID/ {if($1=="SSID:") ssid=substr($2,2,length($2)-2); if($1=="BSSID:") bssid=$2;}
+   /Chanspec/ { width=substr($5,1,3);}
+   /Primary channel/ {channel=$3;
+   if(length(ssid)>0)
+   printf "\{\"ssid\":\"%s\",\"bssid\":\"%s\",\"channel\":%d,\"bw\":%d\},",ssid,bssid,channel,width;}'`;
+
+  candidates=${candidates%?}"]}"
+
+
+if [ $((my_current_channel+0)) -lt 149 -a $((my_current_channel+0)) -gt 48 ]; then
+  
+    wl -i $active_5_radio_name dfs_ap_move "$my_current_channel"/"$bw_5g"; #go back to old dfs channel      
+fi
+
+  echo $candidates;
+

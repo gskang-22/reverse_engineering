@@ -1,0 +1,121 @@
+#!/bin/sh
+# $Id: rcS,v 1.7 2007/10/25 21:58:06 jwessel Exp $
+# This is a minmal rcS file for target startup
+# Make sure that /proc is mounted.
+
+source /usr/exe/defset.as
+# ------------------------------------------------------------------------------
+# mount special filesystem
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t tmpfs tmpfs /tmp
+
+# ------------------------------------------------------------------------------
+# mount /dev as tmpfs
+mount -t tmpfs tmpfs /dev
+mkdir -p /dev/shm
+mkdir -p /dev/pts
+source /usr/exe/cfgdev.sh
+
+# ------------------------------------------------------------------------------
+# mount /etc as tmpfs for R/W, xufuguo, 2015.03.25
+cp -rf /etc /tmp/etc
+mount -t tmpfs tmpfs /etc -o size=32m
+mv /tmp/etc/* /etc && rm -rf /tmp/etc
+
+# ------------------------------------------------------------------------------
+# mount default filesystem with fstab
+umount /tmp
+mount -a   ## auto mount as fstab
+mdev -s &>/dev/null
+
+# ------------------------------------------------------------------------------
+# Assign an address to the loopback device.
+PATH=/usr/bin:/bin:/usr/sbin:/sbin:/bcm/script:/usr/exe:/logs/tools/bin
+runlevel=S
+prevlevel=N
+umask 022
+export PATH runlevel prevlevel
+
+# ------------------------------------------------------------------------------
+#	See if system needs to be setup. This is ONLY meant to
+#	be used for the initial setup after a fresh installation!
+if [ -x /sbin/unconfigured.sh ]; then
+	/sbin/unconfigured.sh
+fi
+
+# ------------------------------------------------------------------------------
+# 	the nciTMSkmod must insmod before mount datafs
+# 	tmsctl will crash depend nciTMSKmod
+test -e /bcm/bin/nciTMSkmod.ko && insmod /bcm/bin/nciTMSkmod.ko
+
+# ------------------------------------------------------------------------------
+#	Source defaults.
+sh /usr/exe/setubi.sh
+sh /usr/exe/backdefault.sh
+sh /usr/exe/setdir.sh
+sh /usr/exe/ckuser.sh
+sh /usr/exe/cfgetc.sh
+source /etc/default/rcS
+export PS1="[\u@\h: \W]\\$ "
+export VERBOSE
+hostname AONT
+
+# ------------------------------------------------------------------------------
+#	Trap CTRL-C &c only in this shell so we can interrupt subprocesses.
+trap ":" INT QUIT TSTP
+
+# ------------------------------------------------------------------------------
+#	Call all parts in order.
+for i in /etc/rcS.d/S??*
+do
+	# Ignore dangling symlinks for now.
+	[ ! -f "$i" ] && continue
+
+	case "$i" in
+		*.sh)
+			# Source shell script for speed.
+			trap - INT QUIT TSTP
+			set start
+			. $i
+			;;
+		*)
+			# No sh extension, so fork subprocess.
+			$i start
+			;;
+	esac
+done
+
+# ------------------------------------------------------------------------------
+#	For compatibility, run the files in /etc/rc.boot too.
+[ -d /etc/rc.boot ] && run-parts /etc/rc.boot
+
+# ------------------------------------------------------------------------------
+#	Finish setup if needed. The comment above about
+#	/sbin/unconfigured.sh applies here as well!
+if [ -x /sbin/setup.sh ]; then
+	/sbin/setup.sh
+fi
+
+# ------------------------------------------------------------------------------
+if [ -x /bcm/script/bcm_setup.sh ]; then
+	/bcm/script/bcm_setup.sh
+fi
+
+#super factory reset exit when start up done
+if [ -x /usr/exe/startupdone.as ]; then
+	/usr/exe/startupdone.as &
+fi
+
+# ------------------------------------------------------------------------------
+# clean boot fail counter. add by xufuguo, 2014.03.25
+sh /bcm/script/clean_boot_fail_counter.sh &
+
+# pls keep this at the end. add by xufuguo, 2014.03.07
+sh /bcm/script/remove_first_boot_flag.sh &
+
+# ------------------------------------------------------------------------------
+echo "MSG: start mdev"
+echo > /dev/mdev.seq
+echo /sbin/mdev > /proc/sys/kernel/hotplug
+mdev -s &> /dev/null

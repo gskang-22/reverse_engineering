@@ -1,0 +1,22 @@
+#!/bin/sh
+
+. functions
+
+WORK_ROLE=`cfgcli -g InternetGatewayDevice.X_ALU-COM_Wifi.WorkRole|cut -d= -f2`
+INTF_5G=$(get_bh_interface_name 5)
+SKIP_SCAN_5G=n
+
+if [ "$WORK_ROLE" == "Controller" ]; then
+	ACSENABLE=`cfgcli -g InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.AutoChannelEnable|cut -d= -f2`
+	if ! echo $ACSENABLE|grep -i "true" > /dev/null; then #fixed channel
+		channel_5g=`cfgcli -g InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.Channel|cut -d= -f2`;
+		if [ $((channel_5g+0)) -lt 149 -a $((channel_5g+0)) -gt 48 ]; then
+			SKIP_SCAN_5G=y
+			touch /tmp/SKIP_SCAN_5G
+		fi
+	fi
+fi
+
+[ "$SKIP_SCAN_5G" == "y" ] || candidates=`sh /usr/exe/whw/bin/find_parent_channel 5 initial>> /tmp/candidates.json`;
+candidates24=`sh /usr/exe/whw/bin/find_parent_channel 24 initial>> /tmp/candidates24.json`;
+rm /tmp/wds_processing 2>/dev/null

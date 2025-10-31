@@ -1,0 +1,25 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+USE_PROCD=1
+
+start_service() {
+	USER=$(ip a | grep -A1 eth0 | tail -1 | awk '{print $2}' | sed s/:/-/g | tr [a-f] [A-F])
+	PASSWORD=MyPassw0rd
+	
+	procd_open_instance
+	procd_set_param env LD_LIBRARY_PATH=/usr/local/howi/lib
+	procd_set_param command /usr/bin/fonendoscope --mqtt_user "$USER" --mqtt_pass "$PASSWORD"
+	procd_set_param respawn
+	procd_close_instance
+}
+
+reload_service()
+{
+    restart
+}
+
+service_triggers()
+{
+    procd_add_reload_trigger fonendoscope
+}

@@ -1,0 +1,7 @@
+#!/bin/sh
+
+killall -SIGKILL rpsd
+cfgcli -s InternetGatewayDevice.X_ALU-COM_ReversePower.Enable false
+cfgcli -s InternetGatewayDevice.X_ALU-COM_ReversePower.Status Off
+rpsd
+

@@ -1,0 +1,1 @@
+../../bcm/script/startup.sh

@@ -1,0 +1,106 @@
+<!--
+ vim:fenc=utf-8
+-->
+<html>
+<% include ( "html_glb/head.html" ) %>
+
+    <body style="overflow:auto">
+        <div class="container"> 
+            <div class="col-xs-12 panel-body">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <div class="logo">
+                            <i class="icon-cog" style="font-size: 2em" aria-hidden="true"><span><%T("Connectivity Check")%></span></i>
+                        </div>
+                    </div>
+                <div class="panel-body">
+                                    <h5 class="lead"><%T("This page enables you to perform a check for PPPoE connection")%></h5>
+                    <div class="col-sm-12" > 
+                        <div class="col-sm-6">  
+                                        <div class=" progress progress-striped active" style="display: none">
+                                            <div id="testw" class="progress-bar progress-bar-success" role="progressbar" 
+                                                 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                    <span class="sr-only">40%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                    <div class="col-sm-6 col-sm-offset-2" id="result" style="display: none">
+                                </div>
+                            </div>
+                <div class="panel-footer">
+                        <button  type="button" class="buttonX button-sm pull-right" id="checkd"><%T("Check")%></button>
+                    <div class="clearfix"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </body>
+
+    <script>
+        (function ($) {
+            $(document).ready(function () {
+                $("body").height(500);
+                var arr = new Array(101);
+                $("#checkd").click(function () {
+                    $(".btn").fadeOut();
+                    $("#result").fadeOut("normal", function () {
+                        $("#result").html("");
+                    })
+
+                    $(".progress-striped").fadeIn("normal", function () {
+                        $.each(arr, function (index) {
+                            $(".progress-bar").width(index + "%");
+                        });
+                    });
+                    $.post("web_diag.cgi?diag", "").done(function (a) {
+                        var d = $.parseJSON(a);
+                        console.log(d);
+                        var pppoe_html = "";
+                        var ping_html = "";
+                        if ($.isEmptyObject(d.ppp_status)) {
+                            pppoe_html = '<div><ol><li><%T("We did not find any PPPoE configuration")%></li></ol></div>';
+                        } else {
+                            $.each(d.ppp_status, function (i, v) {
+                                pppoe_html += '<div class="form-group"><label>' + v.name + ':</label>';
+                                pppoe_html += '<div><ol><li>IPv4: ' + v.connection_status + '</li></ol></div>';
+                                pppoe_html += '<div><ol><li>IPv6: ' + v.connection_status_v6 + '</li></ol></div>';
+                                pppoe_html += '</div>';
+                            });
+                        }
+                        if ($.isEmptyObject(d.ping_result)) {
+                            ping_html = '<div><ol><li><%T("We did not find any configuration")%></li></ol></div>';
+                        } else {
+                            $.each(d.ping_result, function (index, value) {
+                                ping_html += '<div class="form-group"><label>' + value.name + ':</label>';
+								if ($.isEmptyObject(value.output)) {
+									ping_html += '<div><ol><li><%T("Missing IP or DNS address")%></li></ol></div>';
+								} else {
+									$.each(value.output, function (i, v) {
+										ping_html += '<div><ol><li>' + v.result + ',' + v.reason + '<label>' + v.address + '</label></li></ol></div>';
+									});
+								}
+                                ping_html += '</div>';
+                            });
+                        }
+                        $("#result").fadeIn("normal", function () {
+                            $("#result").append('<div class="panel-body">');
+                            $("#result").append('<div class="form-group"><label class="panel-title" style="font-size:20px"><%T("Result")%>:</label></div>');
+                            $("#result").append('<div class="form-group"><label class="panel-title icon-cog"><%T("PON")%>:</label><div ><ol><li>' + d.pon_status[0].status + '</li></ol></div></div>');
+                            $("#result").append('<div class="form-group"><label class="panel-title icon-cog"><%T("PPPoE")%>:</label>' + pppoe_html + '</div>');
+                            $("#result").append('<div class="form-group"><label class="panel-title icon-cog"><%T("Internet")%>:</label>' + ping_html + '</div>');
+                            $("#result").append('</div>');
+                            $(".progress-striped").fadeOut(0, function () {
+                                $(".progress-bar").width("0%");
+                                $(".btn").fadeIn();
+                            });
+                        });
+                    });
+                });
+            });
+        })(this.jQuery);
+    </script>  
+<%include ( "html_glb/footer.html" )%> 
+
+
+</html>

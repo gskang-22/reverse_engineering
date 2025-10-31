@@ -1,0 +1,30 @@
+#!/bin/sh
+echo -e "\n"
+bs /b/e port/index=lan0 stat format:line
+#
+echo -e "\n"
+bs /b/e port/index=lan1 stat format:line
+#
+echo -e "\n"
+bs /b/e port/index=lan2 stat format:line
+#
+echo -e "\n"
+bs /b/e port/index=lan3 stat format:line
+#
+echo -e "\n"
+bs /b/e cpu  reason_stat format:line
+bs /b/e cpu tx_stat format:line
+#
+echo -e "\n"
+bs /b/e ip_class flow_stat format:line
+#
+echo -e "\n"
+bs /b/e gem stat format:line
+#
+echo -e "\n" 
+if [ "$1" = "a" ]
+then
+bs /d/r/pvdc 1 
+bs /d/r/pvdc 0
+fi
+

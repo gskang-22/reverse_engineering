@@ -1,0 +1,35 @@
+#!/bin/sh
+#@author Erma Perenda - erma.1.perenda@nokia-sbell.com
+#This shell script implements the budies discovery 
+get_available_channels(){
+  busy=-1;
+  noise=0;
+  nocat=0;
+  nopkt=0;
+        
+        	#`wl -i $2 channel | grep "target channel" | awk -F " " '{printf $3}'`;
+  chanim_stats=`wl -i $1 chanim_stats all`
+  for ch in $(wl -i $1 chan_info | awk -F " " '{print $2}'); do
+      if [ $ch -lt 15 -a $2 -eq 5 ] || [ $ch -gt 15 -a $2 -eq 24 ]; then 
+          continue;
+       fi
+        		                
+        		                
+       b=`printf "%x" $ch`;
+       if [ $ch -lt 15 ]; then
+           b="0x100$b";
+       else
+            b="0xd0$b";
+        fi
+       busy=`echo "$chanim_stats" |grep "$b" |awk -F " " '{printf $8}'`;
+       busy=$((100-$busy));
+       nocat=`echo "$chanim_stats" |grep "$b" |awk -F " " '{printf $5}'`;
+       nopkt=`echo "$chanim_stats" |grep "$b" |awk -F " " '{printf $6}'`;
+       noise=`echo "$chanim_stats"|grep "$b" | awk -F " " '{printf $13}'`;
+       echo '{"ind":'$ch',"util":'$busy',"nocat":'$nocat',"nopkt":'$nopkt',"knoise":'$noise'},'
+   done
+        		                		    		  					  					  		  		  		  		  		  		      
+}
+channels=`get_available_channels $1 $2`;
+channels='{"channels":'["${channels%?}"]};
+echo $channels;

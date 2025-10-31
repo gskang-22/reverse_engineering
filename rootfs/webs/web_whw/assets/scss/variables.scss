@@ -1,0 +1,99 @@
+
+// Variables
+$fontlight: "Nokia Pure Light";
+$fontregular: "Nokia Pure Regular";;
+$fontbold: "Nokia Pure Bold";
+$fa-font-path : '~font-awesome/fonts';
+//colors
+$white: #FFFFFF;
+$darkgrey: #707070;
+$lightgrey: #7D7F80;
+$bordergrey:#474B4E;
+$lightblue: #00DDF2;
+$pale: #FE5F79;
+$blue: #00DDF2;
+
+//backgroundColor
+$bgcolor-black: #191D20;
+$themecolor: #202529;
+
+//font-size
+$text-tiny:12px;
+$text-small:14px;
+$text-xsmall:16px;
+$text-medium:18px;
+$text-xmedium:24px;
+$text-large:28px;
+$text-xlarge:36px;
+
+@mixin border-radius($radius) {
+    -webkit-border-radius: $radius;
+        -moz-border-radius: $radius;
+        -ms-border-radius: $radius;
+            border-radius: $radius;
+}
+@mixin appearance($value) {
+    -webkit-appearance: $value;
+        -moz-appearance: $value;
+        -ms-appearance: $value;
+        appearance: $value;
+}
+
+@mixin rotate($x) {
+    -webkit-transform: rotate($x);
+    -moz-transform: rotate($x);
+    -o-transform: rotate($x);
+    -ms-transform: rotate($x);
+    transform: rotate($x);
+}
+
+@mixin translate($x, $y) {
+    -webkit-transform: translate($x, $y);
+    -moz-transform: translate($x, $y);
+    -o-transform: translate($x, $y);
+    -ms-transform: translate($x, $y);
+    transform: translate($x, $y);
+}
+
+@mixin translate-important($x, $y) {
+    -webkit-transform: translate($x, $y) !important;
+    -moz-transform: translate($x, $y) !important;
+    -o-transform: translate($x, $y) !important;
+    -ms-transform: translate($x, $y) !important;
+    transform: translate($x, $y) !important;
+}
+
+@mixin clearfix() {
+    &:before,
+    &:after {
+      content: " "; // 1
+      display: table; // 2
+    }
+    &:after {
+      clear: both;
+    }
+  }
+  
+@mixin fixed-dimension($width, $height) {
+    width:$width;
+    height:$height;
+}
+
+@mixin box-shadow($shadow) {
+    -webkit-box-shadow: $shadow; // iOS <4.3 & Android <4.1
+            box-shadow: $shadow;
+  }
+
+@mixin transition-transform($transition...) {
+    -webkit-transition: -webkit-transform $transition;
+       -moz-transition: -moz-transform $transition;
+         -o-transition: -o-transform $transition;
+            transition: transform $transition;
+  }
+  
+  @mixin opacity($opacity) {
+    opacity: $opacity;
+    // IE8 filter
+    $opacity-ie: ($opacity * 100);
+    filter: alpha(opacity=$opacity-ie);
+  }

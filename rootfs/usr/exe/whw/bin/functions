@@ -1,0 +1,89 @@
+#!/bin/sh
+
+get_current_channel() {
+	INTF=$1 #interface name, wl0.1 for example
+	wl -i $INTF chanspec|awk '{ printf "%d", $1 }'
+}
+
+get_current_bw() {
+	INTF=$1
+	wl -i $INTF status | grep Chanspec | awk -F " " '{gsub("MHz","",$5); print $5;}'
+}
+
+interface_name0="wl0"
+interface_name1="wl1"
+
+is_5g_interface()
+{
+	first_channel=`wl -i $1 channels |awk -F " " '{print $1}'`
+    if [ $first_channel > 14 ];then
+		return 1;
+	else
+		return 0;
+	fi
+}         
+is_24g_interface()
+{                                                                            
+	first_channel=`wl -i $1 channels |awk -F " " '{print $1}'`
+	if [ $first_channel < 14 ];then    
+		   return 1;                                     
+	else
+		   return 0;
+	fi
+}
+
+is_beacon_unit()
+{
+	uni_name=`hcfgtool get UNIT.NAME`
+
+	if [  "$uni_name" == "HA030WB" ];then
+		echo 1;
+	elif [  "$uni_name" == "HA020WB" ];then
+		echo 1;
+	else
+		echo 0;
+	fi
+}
+
+get_fh_interface_name()
+{
+	if [ "$1" == "5" ];then
+        ch_2g=`wl -i wl1 channels | cut -d ' ' -f 1`
+        ch_5g=`wl -i wl0 channels | cut -d ' ' -f 1`
+        if [ $ch_2g -ge 1 -a $ch_2g -le 14 -a $ch_5g -ge 36 -a $ch_5g -le 165 ]; then
+                echo "wl0" 
+        else
+                echo "wl1"
+        fi
+
+	elif [ "$1" == "24" ];then
+        ch_2g=`wl -i wl0 channels | cut -d ' ' -f 1`
+        ch_5g=`wl -i wl1 channels | cut -d ' ' -f 1`
+        if [ $ch_2g -ge 1 -a $ch_2g -le 14 -a $ch_5g -ge 36 -a $ch_5g -le 165 ]; then
+                echo "wl0" 
+        else
+                echo "wl1"
+        fi
+
+	fi
+}
+
+get_bh_interface_name()
+{
+	front_interface=$(get_fh_interface_name $1)
+	is_beacon=`is_beacon_unit`
+
+	if [ $is_beacon == 1 ];then
+        echo $front_interface".4"
+	else
+        mesh_enable=`cfgcli -g InternetGatewayDevice.X_ALU-COM_Wifi.X_ALU-COM_NokiaWiFi.Enable|cut -d= -f2`
+        ret=`echo $mesh_enable|grep -i "false"`
+        if [ $ret  ];then
+                echo $front_interface 
+        else
+                echo $front_interface".4"
+        fi
+	fi
+	
+}                                                                                                                                                                                                                                          
+  

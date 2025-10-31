@@ -1,0 +1,27 @@
+# meta vendor
+# configuration for reset to default reserved
+# per line per item, either file or folder under /configs
+# the item listed would be reserved while factory-default-reset, either generic or deep reset
+# the content behind of # is comments in line
+alcatel
+bcm43217
+bcm4331
+bcm
+bosa
+cacert.pem
+hal.cfg
+igmpsys.conf
+mac_assign
+oltInfo
+swdl
+zeroman
+ipsec.d
+gfastcfg.json
+gfastinit.cfg
+p2p
+ri.bak
+ri.bin
+signatureatuo_file_flag
+updtate_precfg_xml
+cfgmgr_cli_back.conf
+X509

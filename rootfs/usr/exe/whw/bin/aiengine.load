@@ -1,0 +1,128 @@
+#!/bin/sh
+
+start()
+{
+# Wait until cfgmgr loaded
+	CFGMGR_READY=/tmp/cfgmgr_socket
+
+	i=0
+	while [ ! -e $CFGMGR_READY ]
+	do
+		i=`expr $i + 1`
+		echo Wait for cfgmgr $i >> /tmp/ai-engine.log
+		sleep 10
+	done
+
+	while true
+	do
+		WORK_ROLE=`cfgcli -g InternetGatewayDevice.X_ALU-COM_Wifi.WorkRole|cut -d= -f2`
+		if [ "$WORK_ROLE" != "" ]; then
+			 export WORK_ROLE
+			 break
+		fi
+		echo WORK_ROLE="$WORK_ROLE"
+		sleep 10
+	done
+
+	echo WORK_ROLE="$WORK_ROLE" >> /tmp/ai-engine.log
+
+	#cfgmgr is in service
+
+	mkdir -p /flash/whw/ai_engine/
+	mkdir -p /tmp/whw/ai_engine/
+	if [ "$WORK_ROLE" == "Controller" ]; then
+		[ -s /flash/whw/ai_engine/ai-configs.conf -a ! -e /tmp/first_boot/ ] || cp /usr/exe/whw/bin/ai-configs.conf /flash/whw/ai_engine/
+		echo "AI Engine loaded"
+		#/usr/exe/whw/bin/msgbroker &
+		/usr/exe/whw/bin/ai-agent &
+		/usr/exe/whw/bin/ai-engine &
+		wifichip=`hcfgtool |grep "WIFI.0.SOLUTION" |awk -F ":" '{print $2}'`
+		if [  "$wifichip" == "BCM43217" -o "$wifichip" == "BCM43602" ];then 
+			[ -s /flash/whw/ai_engine/ai-bgscan-configs.conf -a ! -e /tmp/first_boot/ ] || cp /etc/ai-bgscan-configs.conf /flash/whw/ai_engine/
+			/usr/bin/backgroundscan &
+		fi
+		sleep 4
+		feed_cfg
+
+	elif [ "$WORK_ROLE" == "Agent" ]; then
+		echo "AI Agent loaded"
+		if [ -e /flash/whw/ai_engine/ai-configs.conf ]; then 
+			rm -f /flash/whw/ai_engine/ai-configs.conf;
+		fi
+	        cp /usr/exe/whw/bin/ai-configs.conf /flash/whw/ai_engine/
+		
+		# healing part works together with ai-agent 
+		#while ! cat /etc/net.conf | grep gateway ; do sleep 10; done
+		#
+		# when ROLE_SWITCH=yes, needn't do healing.
+		/usr/exe/whw/bin/ai-agent &
+		wifichip=`hcfgtool |grep "WIFI.0.SOLUTION" |awk -F ":" '{print $2}'`
+		if [  "$wifichip" == "BCM43217"  -o "$wifichip" == "BCM43602" ];then 
+			[ -s /flash/whw/ai_engine/ai-bgscan-configs.conf -a ! -e /tmp/first_boot/ ] || cp /etc/ai-bgscan-configs.conf /flash/whw/ai_engine/
+			/usr/bin/backgroundscan &
+		fi
+	else
+		# In CFG mode, no AI Engine. When switching out of CFG,
+		# onboarding is responsible for bring AI Engine up
+		echo "Unknown work role $WORK_ROLE" >> /tmp/ai-engine.log
+	fi
+}
+
+feed_cfg()
+{
+	ACSENABLE=`cfgcli -g InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.AutoChannelEnable|cut -d= -f2`
+	aicli -m chanop -i ra0 -s acsenable $ACSENABLE
+
+	CHANNELS=`cfgcli -g InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PossibleChannels|cut -d= -f2`
+	aicli -m chanop -i ra0 -s possiblechannels $CHANNELS
+
+	BANDWIDTH=`cfgcli -g InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.X_ASB_COM_OperatingChannelBandwidth|cut -d= -f2`
+	if [ "x$BANDWIDTH" = "xAuto" ]; then
+		aicli -m chanop -i ra0 -s bandwidth "20"
+	else 
+        	aicli -m chanop -i ra0 -s bandwidth ${BANDWIDTH//MHz/}
+	fi
+
+	ACSENABLE=`cfgcli -g InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.AutoChannelEnable|cut -d= -f2`
+	aicli -m chanop -i ra1 -s acsenable $ACSENABLE
+
+	CHANNELS=`cfgcli -g InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.PossibleChannels|cut -d= -f2`
+        aicli -m chanop -i ra1 -s possiblechannels $CHANNELS
+
+	BANDWIDTH=`cfgcli -g InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.X_ASB_COM_OperatingChannelBandwidth|cut -d= -f2`
+	if [ "x$BANDWIDTH" = "xAuto" ]; then
+		aicli -m chanop -i ra1 -s bandwidth "80"
+	else 
+        	aicli -m chanop -i ra1 -s bandwidth ${BANDWIDTH//MHz/}
+	fi
+
+}
+
+save()
+{
+	# Tell AI Engine to sync its DB
+	# AI_CLI sync_db
+	WORK_ROLE=`cfgcli -g InternetGatewayDevice.X_ALU-COM_Wifi.WorkRole|cut -d= -f2`
+	[ "$WORK_ROLE" == "Controller" ] && /usr/exe/whw/bin/aicli sync
+}
+
+echo "AI Engine/Agent"
+cd /usr/exe/whw/bin
+echo $1 >> /tmp/ai-engine.log
+
+case "$1" in
+  start)
+  	start &
+	;;
+  start_role)
+	export ROLE_SWITCH=yes
+	start &
+	;;
+  save)
+  	save
+	;;
+  *)
+	echo $"Usage: $0 {start|save}"
+	exit 2
+esac
+

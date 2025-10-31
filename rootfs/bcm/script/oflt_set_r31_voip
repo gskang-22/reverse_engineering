@@ -1,0 +1,47 @@
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.OutboundProxy $1
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.RegistrarServer $1
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.OutboundProxyPort 5060
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.DigitMap xxxxxxxx
+
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.1.SIP.AuthUserName privid$2
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.1.SIP.AuthPassword newsys
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.1.SIP.URI   $2
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.1.Enable Enabled
+
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.2.SIP.AuthUserName privid$3 
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.2.SIP.AuthPassword newsys
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.2.SIP.URI   $3
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.2.Enable Enabled
+
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.3.SIP.AuthUserName privid$4
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.3.SIP.AuthPassword newsys
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.3.SIP.URI   $4
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.3.Enable Enabled
+
+
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.4.SIP.AuthUserName privid$5
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.4.SIP.AuthPassword newsys
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.4.SIP.URI   $5
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.4.Enable Enabled
+
+
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.5.SIP.AuthUserName privid$6
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.5.SIP.AuthPassword newsys
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.5.SIP.URI   $6
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.5.Enable Enabled
+
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.6.SIP.AuthUserName privid$7
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.6.SIP.AuthPassword newsys
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.6.SIP.URI   $7
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.6.Enable Enabled
+
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.7.SIP.AuthUserName privid$8
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.7.SIP.AuthPassword newsys
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.7.SIP.URI   $8
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.7.Enable Enabled
+
+
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.8.SIP.AuthUserName privid$9
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.8.SIP.AuthPassword newsys
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.8.SIP.URI   $9
+cfgcli -s InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.8.Enable Enabled

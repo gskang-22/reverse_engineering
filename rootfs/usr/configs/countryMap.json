@@ -1,0 +1,83 @@
+{
+  "CountryMapTable":[
+    {
+      "defaultCountryID":["ww"],
+      "CountryList":
+      {
+        "Country":[
+          {
+            "Name": "Malaysia",
+            "CountryCode": "MY",
+            "WlCountryID": "MY"
+          },
+          {
+            "Name": "China-HongKong",
+            "CountryCode": "HK",
+            "WlCountryID": "AU"       
+          },
+          {
+            "Name": "Singapore",
+            "CountryCode": "SG",
+            "WlCountryID": "SG"
+          },
+		  {
+            "Name": "Egypt",
+            "CountryCode": "eg",
+            "WlCountryID": "eg"
+          },
+		  {
+            "Name": "Morocco",
+            "CountryCode": "ma",
+            "WlCountryID": "ma"
+          },
+		  {
+            "Name": "Tunisia",
+            "CountryCode": "tu",
+            "WlCountryID": "tu"
+          },
+		  {
+            "Name": "Qatar",
+            "CountryCode": "qa",
+            "WlCountryID": "qa"
+          }
+          ]
+      }
+    },
+    {
+      "defaultCountryID":["cn"],
+      "CountryList":
+      {
+        "Country":[
+          {
+            "Name": "China",
+            "CountryCode": "CN",
+            "WlCountryID": "CN"
+          },
+          {
+            "Name": "China-HongKong",
+            "CountryCode": "HK",
+            "WlCountryID": "AU"
+          }
+          ]
+      }
+    },
+	{
+      "defaultCountryID":["w0"],
+      "CountryList":
+      {
+        "Country":[
+          {
+            "Name": "Bolivia",
+            "CountryCode": "bo",
+            "WlCountryID": "bo"
+          },
+          {
+            "Name": "United State",
+            "CountryCode": "us",
+            "WlCountryID": "us"
+          }
+          ]
+      }
+    }
+  ]
+}

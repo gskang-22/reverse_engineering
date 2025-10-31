@@ -1,0 +1,18 @@
+#!/bin/sh
+
+. functions
+
+for rint in $(ifconfig | grep $(get_fh_interface_name 5) | grep -v ".v0 " | awk -F " " '{print $1}'); do
+  is_up=`wl -i $rint isup`;
+  is_ap_mode=`wl -i $rint ap`;
+        
+  if [ "$is_up" == "1" -a "$is_ap_mode" == "1" ]; then
+      radar_in_scan=`wl -i $rint dfs_ap_move | grep "Radar Scan In Progress" | wc -l`;
+      if [ "$radar_in_scan" == "1" ];then
+        wl -i $rint dfs_ap_move -1
+        break;
+      fi
+  fi
+done
+     
+  

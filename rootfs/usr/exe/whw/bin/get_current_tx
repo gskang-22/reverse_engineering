@@ -1,0 +1,16 @@
+#!/bin/sh
+
+. functions
+
+tx=0;
+for rint in $(ifconfig | grep $(get_fh_interface_name 5) | grep -v ".v0 " | awk -F " " '{print $1}'); do
+	is_up=`wl -i $rint isup`;
+	is_ap_mode=`wl -i $rint ap`;
+	if [ "$is_up" == "1" -a "$is_ap_mode" == "1" ]; then
+		name=$rint;
+		tx=`wl -i $name chanim_stats | grep 0x | awk -F " " '{printf "%d",$2}'`;
+		break;
+	fi
+done
+
+echo $tx;

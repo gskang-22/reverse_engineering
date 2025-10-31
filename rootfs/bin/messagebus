@@ -1,0 +1,59 @@
+#!/bin/sh
+
+# Sanity checks.
+[ -x /bin/dbus-daemon ] || exit 0
+
+# so we can rearrange this easily
+processname=dbus-daemon
+timername=ndk_timer
+
+RETVAL=0
+
+start() {
+    echo $"Starting system message bus: "
+    if [ -x /var/run/messagebus.pid ]; then
+        rm -f /var/run/messagebus.pid
+    fi
+    if [ -x /bin/dbus-uuidgen ] ; then
+        /bin/dbus-uuidgen --ensure
+    fi
+    export DBUS_DEBUG_OUTPUT=1
+    $processname --system --fork
+
+    if [ -x /sbin/$timername ] ; then
+        $timername &
+    fi
+}
+
+stop() {
+    echo $"Stopping system message bus: "
+
+    ## we don't want to kill all the per-user $processname, we want
+    ## to use the pid file *only*; because we use the fake nonexistent 
+    ## program name "$servicename" that should be safe-ish
+    killall $processname
+    RETVAL=$?
+    if [ $RETVAL -eq 0 ]; then
+        rm -f /var/run/messagebus.pid
+    fi
+
+    killall $timername
+}
+
+# See how we were called.
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|restart}"
+        ;;
+esac
+exit $RETVAL

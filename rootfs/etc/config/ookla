@@ -1,0 +1,5 @@
+config ookla config
+	option cross_traffic 65536
+	option min_cross_time 3
+	option url http://www.speedtest.net/api/embed/n2slvhnakk9126ge/config
+	option enable 1

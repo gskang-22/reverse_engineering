@@ -1,0 +1,19 @@
+#!/bin/sh
+
+. functions
+
+isOnDFS=0;
+for rint in $(ifconfig | grep wl | grep -v ".v0 " | awk -F " " '{print $1}'); do
+	is_up=`wl -i $rint isup`;
+	is_ap_mode=`wl -i $rint ap`;
+	if [ "$is_up" == "1" -a "$is_ap_mode" == "1" ]; then
+		name=$rint;
+		channel=$(get_current_channel $name)
+			#`wl -i $name channel | grep "current mac channel" | awk -F " " '{print $4}'`;
+		if [ $channel -lt 149 -a $channel -gt 48 ]; then
+			isOnDFS=1;
+		fi
+	fi
+done
+echo $isOnDFS	
+

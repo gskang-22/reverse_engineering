@@ -1,0 +1,17 @@
+#!/bin/sh /etc/rc.common
+
+START=15
+
+USE_PROCD=1
+PROG=/sbin/ustatusd
+
+start_service() {
+	procd_open_instance
+	procd_set_param command "$PROG"
+	procd_set_param respawn
+	procd_set_param watch network.status
+	procd_open_trigger
+	procd_add_config_trigger "config.change" "ustatus" /etc/init.d/ustatusd restart
+	procd_close_trigger
+	procd_close_instance
+}

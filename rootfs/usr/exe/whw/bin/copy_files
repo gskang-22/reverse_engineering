@@ -1,0 +1,7 @@
+#!/bin/sh
+#@author Erma Perenda - erma.1.perenda@nokia-sbell.com
+tftp -p -l /tmp/users.txt 192.168.18.100
+tftp -p -l /tmp/channelsurvey.txt 192.168.18.100
+tftp -p -l /tmp/channellocationscorrect.txt 192.168.18.100
+
+

@@ -1,0 +1,40 @@
+#!/bin/sh
+#Set the node to the last known configuration
+if [ $# -eq 1 ]; then
+	#parent_node=`cat ai-configs.conf | grep parent_node | awk -F "=" '{print $2}'`;
+	#parent_band=`cat ai-configs.conf | grep parent_band | awk -F "=" '{print $2}'`;
+
+	ch_2g=`cat ai-configs.conf | grep ch_2g | awk -F "=" '{print $2}'`;
+	bw_2g=`cat ai-configs.conf | grep bw_2g | awk -F "=" '{print $2}'`;
+	bonding_2g=`cat ai-configs.conf | grep bonding_2g | awk -F "=" '{print $2}'`;
+	name_2g=`cat ai-configs.conf | grep name_2g | awk -F "=" '{print $2}'`;
+
+	ch_5g=`cat ai-configs.conf | grep ch_5g | awk -F "=" '{print $2}'`;
+	bw_5g=`cat ai-configs.conf | grep bw_5g | awk -F "=" '{print $2}'`;
+	bonding_5g=`cat ai-configs.conf | grep bonding_5g | awk -F "=" '{print $2}'`;
+	name_5g=`cat ai-configs.conf | grep name_5g | awk -F "=" '{print $2}'`;
+
+	if [ $1 -eq 1 ]; then
+
+		if [ ! -z "${ch_5g// }" ]; then
+			if [ $ch_5g -lt 49 -o $ch_5g -gt 145 ]; then
+				sh change-channel $name_5g $ch_5g $bw_5g $bonding_5g $ch_5g $bw_5g $bonding_5g 0 0;
+			fi
+		fi
+		exit 0;
+	fi
+
+	if [ ! -z "${ch_2g// }" ]; then
+		sh change-channel $name_2g $ch_2g $bw_2g $bonding_2g $ch_2g $bw_2g $bonding_2g 0 0;
+	fi
+	
+	if [ ! -z "${ch_5g// }" ]; then
+		sh change-channel $name_5g $ch_5g $bw_5g $bonding_5g $ch_5g $bw_5g $bonding_5g 0 0;
+	fi
+
+	#sleep 5;
+	#if [ ! -z "${parent_node// }" ]; then
+	#	sh switch-parent $parent_node $parent_band
+	#fi
+fi
+

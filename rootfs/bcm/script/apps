@@ -1,0 +1,217 @@
+#!/bin/sh
+# integrated applications process
+
+decompress_omci_image()
+{
+  if [ -f /sbin/omciMgr.tgz ]; then
+    tar zxvf /sbin/omciMgr.tgz -C /sbin
+    rm -f /sbin/omciMgr.tgz
+    chmod 777 /sbin/omciMgr
+  fi
+
+  if [ -f /sbin/parser.tgz ]; then
+    tar zxvf /sbin/parser.tgz -C /sbin
+    rm -f /sbin/parser.tgz
+    chmod 777 /sbin/parser
+  fi
+  sync
+}
+
+init_voice_config()
+{
+  #make dir
+  [[ -d /configs/alcatel ]] || mkdir -p /configs/alcatel
+  [[ -d /configs/alcatel/config ]] || mkdir -p /configs/alcatel/config
+
+  #copy queue files
+  [[ -e /configs/alcatel/config/cvp_ipc ]] || cp /usr/etc/alcatel/config/cvp_ipc /configs/alcatel/config/cvp_ipc
+  [[ -e /configs/alcatel/config/vd_cfg_ipc ]] || cp /usr/etc/alcatel/config/vd_cfg_ipc /configs/alcatel/config/vd_cfg_ipc
+  [[ -e /configs/alcatel/config/vd_vm_ipc ]] || cp /usr/etc/alcatel/config/vd_vm_ipc /configs/alcatel/config/vd_vm_ipc
+  [[ -e /configs/alcatel/config/vpp ]] || cp /usr/etc/alcatel/config/vpp /configs/alcatel/config/vpp
+  [[ -e /configs/alcatel/config/vpp_tr69 ]] || cp /usr/etc/alcatel/config/vpp_tr69 /configs/alcatel/config/vpp_tr69
+  [[ -e /configs/alcatel/config/vpp_event ]] || cp /usr/etc/alcatel/config/vpp_event /configs/alcatel/config/vpp_event
+  [[ -e /configs/alcatel/config/alarm ]] || cp /usr/etc/alcatel/config/alarm /configs/alcatel/config/alarm
+  [[ -e /configs/alcatel/config/trc_dbg ]] || cp /usr/etc/alcatel/config/trc_dbg /configs/alcatel/config/trc_dbg
+
+  #copy schema
+  if [ -e /tmp/first_boot/first_boot_flag_voice ]; then
+    cp -f /usr/etc/alcatel/config/default_voip.txt /configs/alcatel/config/default_voip.txt
+  else
+    [[ -e /configs/alcatel/config/default_voip.txt]] || cp -f /usr/etc/alcatel/config/default_voip.txt /configs/alcatel/config/default_voip.txt
+  fi
+  if [ -e /tmp/first_boot/first_boot_flag_voice ]; then
+    cp -f /usr/etc/alcatel/config/ont_generic.txt /configs/alcatel/config/ont_generic.txt
+  else
+    [[ -e /configs/alcatel/config/ont_generic.txt ]] || cp -f /usr/etc/alcatel/config/ont_generic.txt /configs/alcatel/config/ont_generic.txt
+  fi
+  if [ -e /tmp/first_boot/first_boot_flag_voice ]; then
+    cp -f /usr/etc/alcatel/config/client_specific.txt /configs/alcatel/config/client_specific.txt
+  else
+    [[ -e /configs/alcatel/config/client_specific.txt ]] || cp -f /usr/etc/alcatel/config/client_specific.txt /configs/alcatel/config/client_specific.txt
+  fi
+  if [ -e /tmp/first_boot/first_boot_flag_voice ]; then
+    cp -f /usr/etc/alcatel/config/subscriber_data.txt /configs/alcatel/config/subscriber_data.txt
+  else
+    [[ -e /configs/alcatel/config/subscriber_data.txt ]] || cp -f /usr/etc/alcatel/config/subscriber_data.txt /configs/alcatel/config/subscriber_data.txt
+  fi
+  if [ -e /tmp/first_boot/first_boot_flag_voice ]; then
+    cp -f /usr/etc/alcatel/config/voip_generic.txt /configs/alcatel/config/voip_generic.txt
+  else
+    [[ -e /configs/alcatel/config/voip_generic.txt ]] || cp -f /usr/etc/alcatel/config/voip_generic.txt /configs/alcatel/config/voip_generic.txt
+  fi
+  if [ -e /tmp/first_boot/first_boot_flag_voice ]; then
+    cp -f /usr/etc/alcatel/config/hardware_specific.txt /configs/alcatel/config/hardware_specific.txt
+  else
+    [[ -e /configs/alcatel/config/hardware_specific.txt ]] || cp -f /usr/etc/alcatel/config/hardware_specific.txt /configs/alcatel/config/hardware_specific.txt
+  fi
+  [[ -e /configs/alcatel/config/zipscde.txt ]] || cp -f /usr/etc/alcatel/config/zipscde.txt /configs/alcatel/config/zipscde.txt
+
+  #copy default profile
+  [[ -e /configs/alcatel/config/DefaultVoIPConfig.xml ]] || cp /usr/etc/alcatel/config/DefaultVoIPConfig.xml /configs/alcatel/config/DefaultVoIPConfig.xml
+  MNEMONIC=`ritool get Mnemonic|cut -d: -f2`
+  if [ "$MNEMONIC" = "G-881G-A" -o "$MNEMONIC" = "G-881G-B" -o "$MNEMONIC" = "G-821G-B" ]; then
+    if [ -e /tmp/first_boot/first_boot_flag_voice ]; then
+      cp /usr/etc/alcatel/config/precfg/ftpprofile_bcm881.xml /configs/alcatel/config/ftpprofile.xml
+    else
+      [[ -e /configs/alcatel/config/ftpprofile.xml ]] || cp /usr/etc/alcatel/config/precfg/ftpprofile_bcm881.xml /configs/alcatel/config/ftpprofile.xml
+    fi
+  elif [ "$MNEMONIC" = "G-240G-A" -o "$MNEMONIC" = "G-240G-C" ]; then
+    if [ -e /tmp/first_boot/first_boot_flag_voice ]; then
+      cp /usr/etc/alcatel/config/precfg/ftpprofile_bcm240.xml /configs/alcatel/config/ftpprofile.xml
+    else
+      [[ -e /configs/alcatel/config/ftpprofile.xml ]] || cp /usr/etc/alcatel/config/precfg/ftpprofile_bcm240.xml /configs/alcatel/config/ftpprofile.xml
+    fi
+  else
+    if [ -e /tmp/first_boot/first_boot_flag_voice ]; then
+      cp /usr/etc/alcatel/config/precfg/ftpprofile_bcm.xml /configs/alcatel/config/ftpprofile.xml
+    else
+      [[ -e /configs/alcatel/config/ftpprofile.xml ]] || cp /usr/etc/alcatel/config/precfg/ftpprofile_bcm.xml /configs/alcatel/config/ftpprofile.xml
+    fi
+  fi
+
+  #copy led action configuration file
+  cp -f /usr/etc/alcatel/config/led_action_maptable /configs/led_action_maptable
+}
+
+start_voice()
+{
+  numOfPort=$(hcfgtool get POTS.NUMS)
+  if [ "X${numOfPort}" = "X" ]; then numOfPort=0; fi
+  if [ ${numOfPort} -le 0 ]; then return; fi
+
+  VALGRIND_MODULE=$(cat /configs/valgrind_module.cfg |grep "VALGRIND_MODULE=" |awk '{print substr($1,17,7)}')
+  if [ "${VALGRIND_MODULE}" = "omciMgr" ]; then echo "Valgrind Module:omciMgr"; return; fi
+
+  echo "Start voice ..."
+  lsmod |grep -q pcmshim || insmod /bcm/bin/pcmshim.ko
+  lsmod |grep -q endpointdd || insmod /bcm/bin/endpointdd.ko
+  if [ "$config_voip_sw" = "aricent" -o -f /usr/alcatel/bin/tpdm ]; then
+    cd /tmp
+    touch shared_state_mem
+    chmod 644 shared_state_mem
+    [[ -d /configs/alcatel/config ]] || mkdir -p /configs/alcatel/config
+    cd /configs/alcatel/config && touch resolv.conf
+    [[ -d /configs/alcatel/filedownload ]] || mkdir -p /configs/alcatel/filedownload
+    # in aricent, only support ptag
+    #vconfig add iphost0 0
+
+    . /opt/scripts/board_params.sh
+
+    #ONU_NUM_VOICEPORTS=$MAX_NUM_POTS_UNI
+    ONU_NUM_VOICEPORTS=$numOfPort
+    ONU_MAC=$(/sbin/ritool get MACAddress |grep MACAddress |awk '{print substr($2,12,17)}')
+    ONU_CLEI=$(/sbin/ritool get CleiCode |grep CleiCode |awk '{print substr($2,10,10)}')
+    ONU_PON_SERIAL_NUM=$(/sbin/ritool get G984Serial |grep G984Serial |awk '{print substr($2,12,8)}')
+
+    export ONU_NUM_VOICEPORTS ONU_MAC ONU_CLEI ONU_PON_SERIAL_NUM
+
+    echo export ONU_NUM_VOICEPORTS=$ONU_NUM_VOICEPORTS > /tmp/onuenv
+    echo export ONU_MAC=$ONU_MAC >> /tmp/onuenv
+    echo export ONU_CLEI=$ONU_CLEI >> /tmp/onuenv
+    echo export ONU_PON_SERIAL_NUM=$ONU_PON_SERIAL_NUM >> /tmp/onuenv
+
+    if [ ! $ONU_NUM_VOICEPORTS ]; then
+        ONU_NUM_VOICEPORTS=0
+    fi
+    if [ $ONU_NUM_VOICEPORTS -ne 0 ]; then
+      /bin/dbg_logger &
+      while [ ! -e /tmp/error ]; do echo "No /tmp/error"; sleep 1; done
+
+      /usr/alcatel/bin/tpdm &
+      sleep 5
+      /bin/DHCP &
+
+      if [ "$VOIP_TYPE" != "SIP" ]; then
+        /usr/alcatel/bin/toolkit_ppc_exe &
+        /usr/alcatel/bin/toolkit_stack_exe &
+      else
+        /usr/alcatel/bin/ipphone &
+        /usr/alcatel/bin/sip &
+        /usr/alcatel/bin/subscriptionManager &
+      fi
+
+      /usr/alcatel/bin/downloadManager &
+      /usr/alcatel/bin/profileManager &
+      /usr/alcatel/bin/voipmgr &
+    fi
+  else
+    init_voice_config
+    cd /sbin
+    export MALLOC_CHECK_=1
+    (./voip & )
+    unset MALLOC_CHECK_
+  fi
+
+  echo "Voice started."
+}
+
+start_appmgr()
+{
+  if [ -e /sbin/appmgr ]; then
+    echo "Start appmgr ..."
+    /sbin/appmgr &
+  fi
+}
+
+start_cfmmgr()
+{
+  if [ -e /sbin/cfmmgr ]; then
+    echo "Start cfmmgr ..."
+    /sbin/cfmmgr &
+  fi
+}
+
+start_mocaMgr()
+{
+  if [ -e /sbin/mocaMgr ]; then
+    echo "Start mocaMgr ..."
+    sleep 2 #need time to wait for mocad/mocap to be ready
+    /sbin/mocaMgr &
+  fi
+}
+
+start_diagnosis()
+{
+  if [ -e /sbin/diagnosis ]; then
+    echo "Start diagnosis ..."
+    /sbin/diagnosis &
+  fi
+}
+
+start_app()
+{
+  # start voice
+  start_voice
+
+  # start appmgr
+  start_appmgr
+  
+  # start cfmmgr
+  #start_cfmmgr
+
+  # start mocaMgr
+  start_mocaMgr
+
+  # start diagnosis
+  start_diagnosis
+}

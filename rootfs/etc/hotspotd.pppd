@@ -1,0 +1,16 @@
+ipcp-accept-local
+ipcp-accept-remote
+require-pap
+refuse-eap
+refuse-chap
+refuse-mschap 
+refuse-mschap-v2 
+noccp
+crtscts
+nodefaultroute
+noipdefault
+lcp-echo-interval 600
+lcp-echo-failure 2
+pap-restart 7
+pap-max-authreq 2
+noaccomp

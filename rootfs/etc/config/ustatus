@@ -1,0 +1,23 @@
+config global
+	option rssi_low 40
+	option rssi_high 140
+	option tx_rate_low 64000
+	option tx_rate_high 144400
+	option tx_retries 5
+	option station_poll 5
+	option station_status 30
+
+config wlanintf 'wlanintf'
+    list interface wl1.v0
+    list interface wl1.1.v0
+    list interface wl1.2.v0
+    list interface wl1.3.v0
+    list interface wl1.4.v0
+    list interface wl0.v0
+    list interface wl0.1.v0
+    list interface wl0.2.v0
+    list interface wl0.3.v0
+    list interface wl0.4.v0
+    list interface wds1.4
+    list interface wds0.4
+    list interface veip

@@ -1,0 +1,17 @@
+/configs/alcatel
+/configs/cfgmgr_cli_back.conf
+/configs/cfg_update_remote_encryption.kv
+/configs/config.cfg
+/configs/config.cfg.bak
+/configs/config.cfg.lastsucc
+/configs/config_encryption.cfg
+/configs/config_encryption.cfg.bak
+/configs/confignew.cfg
+/configs/confignew.cfg.bak
+/configs/eponspeed
+/configs/eponspeedrestartinfo
+/configs/firmwareMfgTime
+/configs/precfg_remote_encryption.xml
+/configs/tr069_conf
+/configs/updtate_precfg_xml
+/configs/onboarding.txt

@@ -1,0 +1,15 @@
+# meta custom
+# configuration for reset to default reserved
+# per line per item, either file or folder under /configs
+# the item listed would be reserved while factory-default-reset, removed while deep factory-default-reset
+# the content behind of # is comments in line
+hgu_slid
+hgu_loginid
+precfg_remote_flag
+precfg_remote_avalible
+precfg_remote_encryption.xml
+precfg_remote.xml
+cfg_update_remote_avalible
+cfg_update_remote_encryption.kv
+cfg_update_remote.kv
+dongle.cfg

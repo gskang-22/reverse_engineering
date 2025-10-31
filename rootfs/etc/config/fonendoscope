@@ -1,0 +1,61 @@
+config global global
+	# single, tree, all
+	option restart_policy all
+	option duration	600
+	option retries 100
+	option stat_timeout 10
+
+config process ubusd
+	option enabled true
+	option bin_path	/sbin/ubusd
+
+config process rpcd
+	option enabled true
+	option bin_path	/sbin/rpcd
+
+config process capin
+	option enabled true
+	option bin_path	/usr/bin/capin
+
+config process boardd
+	option enabled true
+	option bin_path /usr/bin/boardd
+
+config process plasmodium
+	option enabled true
+	option bin_path	/sbin/plasmodium
+
+config process dhcpmon
+	option enabled true
+	option bin_path /usr/bin/dhcpmon
+
+config process wifimon
+	option enabled true
+	option bin_path /usr/sbin/wifimond
+
+config process meshintf
+        option enabled true
+        option bin_path /usr/bin/meshintf
+
+config process nemo
+	option enabled true
+	option bin_path	/usr/sbin/nemo
+
+config process ustatusd
+	option enabled true
+	option bin_path /sbin/ustatusd
+
+config process apcloud
+    option enabled true
+    option bin_path "/usr/bin/apcloud /etc/config/ apcloud do_not_fork" 
+
+config process bw_ookla
+        option enabled true
+        option bin_path /usr/bin/bw_ookla
+
+config process log_agent
+	option enabled true
+	option bin_path '/usr/bin/log_agent -c /etc/ssl/certs'
+
+config config 'config'
+        option version 'NWF200500'

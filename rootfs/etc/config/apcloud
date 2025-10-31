@@ -1,0 +1,85 @@
+config main main
+       option manufacturer NOKIA_BEACON_1
+       option version 1.0-20-capin
+       option debug 2
+       option config_mode http
+       option notify_mode http
+       option server xca-back.dev2.homewifi.nokia.com
+       option port 8443
+       option use_tls 1
+       option ca_path /etc/ssl/certs
+       option special_bootup_flag 1
+       option sta_connection_percentage 20
+       option radio_access_type_2g 0
+       option radio_access_type_5g 0
+       option off_channel_scan_5g 1
+       option username "admin"
+       option password "admin"
+       option compression_type gzip
+       option compression_level medium
+       option dns_addr_resolve ipv4
+       option connection_age_time 0
+
+config interfaces interfaces
+       option base_interface_2G wl1
+       option base_interface_5G wl0
+
+config url_path url_path
+       option server_path '/NGSCserver'
+       option fault_path '/FMserver'
+       option config_data_path '/apEntries/phyAPConfiguration'
+       option metric_report_path '/apEntries/schemaLessApMetrics'
+       option fault_report_path '/apEntries/faultNotification'
+
+config intervals intervals
+       option base_wakeup_time 30
+       option config_polling_interval 1
+       option metric_report_interval  1
+       option neighbor_report_scan_interval 20
+       option neighbor_ap_scan_interval 2880
+       option perf_scan_interval 2
+       option perf_report_interval 2
+       option noise_evaluation_period 5
+       option cloud_config_retry_interval 3
+       option dns_cache_tout 1800
+
+config location location
+       option posx 0
+       option posy 0
+       option posz 0
+       option lat 0
+       option long 0
+       option alt 0
+
+config fault fault
+       option quick_report 1
+       option noise_threshold -80
+
+config rssi_penalty rssi_penalty
+       option maxrssi_threshold_1 -13
+       option maxrssi_penalty_1 0
+       option maxrssi_threshold_2 -23
+       option maxrssi_penalty_2 0
+
+config noise_threshold noise_threshold
+
+config adaptative_scan adaptative_scan
+       option scan_mode 1
+       option scan_mode_5 1
+       option mode_type_1 0.5,5,2,5,15
+       option mode_type_2 1,20,2,15,60
+       option mode_type_3 0.2,5,5,60,0
+
+config 80211h_csa 80211h_csa
+       option spect_mode_2g 1
+       option spect_mode_5g 1
+       option csa_count_2g 5
+       option csa_count_5g 5
+       option noise_threshold -65
+
+config 80211h_dfs 80211h_dfs
+
+config rrm rrm
+
+config status status
+       option enabled 0

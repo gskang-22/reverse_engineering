@@ -1,0 +1,9 @@
+s="conn_id=0&conn_mode=R&ipp=ipv4&ip_mode=static&pppoe_username=&pppoe_password=&externalIpAddr=192.168.1.1&netmask=255.255.255.0&defGateway=192.168.1.1&firstDns=&secondDns=&mtu=1492&vlanSw=2&vlanId=87&m8021p=0&servlist=VOICE&act=&auth=factory"
+
+export CONTENT_LENGTH=${#s} REQUEST_METHOD=POST CONTENT_TYPE=application/x-www-form-urlencoded  LD_LIBRARY_PATH=/webs/
+
+echo $s | /webs/wan_config.cgi config
+
+sleep 3
+
+ifconfig pon_87_0_1 down

@@ -1,0 +1,682 @@
+#!/bin/sh
+#@author Erma Perenda - erma.1.perenda@nokia-sbell.com
+#This shell script implements the Sensing module of the AI engine
+#accepts 8 arguments: a)interface stats b) neighbor scan 24g c)neighbor scan 5g d)channel survey 24g e)channelsurvey 5g
+#sensing 1 0 0 1 1 1 "1,11" "AI-BCM" => get interface stats and channel survey for 24g and 5g, 
+#but not get neighbor scanning, DISCOVER buddies, TARGET CHANNELS, TARGET SSIDS FOR SCAN DISCOVERY
+##########################GET WLAN INTERFACES DATA########################
+my_ip_addr="";
+network_data="";
+current_ch_util_2g=0;
+current_ch_util_5g=0;
+
+. functions
+    
+get_interfaces(){
+  if [ $# -eq 8 ]; then
+     echo "start_sensing_$5" > /tmp/dbg_sensing
+     interfaces_24='"band_24":{"radios":[{"name":"phy_radio1","interfaces":[ ';
+     interfaces_5='"band_5":{"radios":[{"name":"phy_radio2","interfaces":[ '; 
+     channel_5g=0;
+     bw_2g=0;
+     bw_5g=0;
+     channel_2g=0;
+     active_24_radio_name="";
+     active_5_radio_name="";
+     wds_bssid_24="";
+     wds_bssid_5="";
+     index_2g=0;
+     index_5g=0;
+
+     wds_bssid_sta_24=`wl -i $(get_fh_interface_name 24) bssid | awk -F " " '{print toupper($1);}'`;
+     wds_bssid_sta_5=`wl -i $(get_fh_interface_name 5) bssid | awk -F " " '{print toupper($1)}'`;
+    if [ -z "$wds_bssid_sta_24" ]; then
+      wds_bssid_sta_24="none";
+    fi
+
+    if [ -z "$wds_bssid_sta_5" ]; then
+      wds_bssid_sta_5="none";
+    fi
+
+    for rint in $(ifconfig | grep wl | grep -v ".v0 " | awk -F " " '{print $1}'); do
+       is_up=`wl -i $rint isup`;
+       is_ap_mode=`wl -i $rint ap`;
+       if [ "$is_up" == "1" -a "$is_ap_mode" == "1" ]; then
+        name=$rint
+        ssid=`wl -i $rint ssid | awk -F ": " '{gsub("\"","",$2);print $2}'`;
+        bssid=`wl -i $rint bssid | awk -F " " '{print toupper($1);}'`;
+        enabled=1;
+        width=`wl -i $name status | grep Chanspec | awk -F " " '{gsub("MHz","",$5); print $5;}'`;
+        vht_mode=`wl -i $name vhtmode`;
+        channel=$(get_current_channel $name)
+		#`wl -i $name channel | grep "target channel" | awk -F " " '{print $3}'`;
+
+        if [ "$vht_mode" == "0" -a $channel -lt 15 ];then
+          width=20;
+        fi
+
+        if [ -z "$width" ]; then
+          continue;
+        fi
+       
+        txpower=`wl -i $name txpwr | awk -F " " '{print $1}'`
+        bonding=2;
+        band=24;
+
+        if [ $channel -gt 15 ]; then
+          band=5;
+          channel_5g=$channel;
+          bw_5g=$width;
+        else
+          channel_2g=$channel;
+          bw_2g=$width;
+        fi
+
+        bonding=2;
+        
+        if [ $channel -lt 15 -a $width -eq 40 ]; then
+          sec_ch_24=`wl -i $name status | grep Chanspec | awk -F " " '{print $4}'`;
+          if [ $sec_ch_24 -lt $channel ]; then
+            bonding=0;
+          else
+            bonding=1;
+          fi
+        fi
+      
+
+        details='{"name":"'$name'","bssid":"'$bssid'","ssid":"'$ssid'","type":"NN","ch":'$channel',"bond":'$bonding',"bw":'$width',"txpower":'$txpower;
+
+
+      ##############################collect statistics for associated stations ########################
+        stations=',"sta":[] ';
+        if [ $1 -eq 1 ]; then 
+        stations=`get_stations $name $band`
+        l=2;
+        stations=',"stas":'["${stations%?}"];
+        fi
+
+      details=$details$stations"},"
+    ######################################## stations stats end ########################################
+      if [ "$band" == "24" ]; then
+        active_24_radio_name=$name;
+        interfaces_24=$interfaces_24$details;
+        wds_bssid_24=$bssid;
+        index_2g=1;
+      elif [ "$band" == "5" ]; then
+        interfaces_5=$interfaces_5$details;
+        active_5_radio_name=$name;
+        index_5g=5;
+        wds_bssid_5=$bssid;
+      fi  
+    fi
+  done
+
+  vht_mode_24g=`wl -i $active_24_radio_name vhtmode`;
+  if [ -z "$vht_mode_24g" ];then
+    vht_mode_24g=1;
+  fi
+
+  interfaces_24=${interfaces_24%?}'],"vhtmode":'$vht_mode_24g',"wds_bssid":"'$wds_bssid_24'","wds_bssid_sta":"'$wds_bssid_sta_24'"}';
+
+  vht_mode_5g=`wl -i $active_5_radio_name vhtmode`;
+  if [ -z "$vht_mode_5g" ];then
+    vht_mode_5g=1;
+  fi
+
+  radar_event=$(get_radar_event)
+  
+  interfaces_5=${interfaces_5%?}'],"vhtmode":'$vht_mode_5g',"wds_bssid":"'$wds_bssid_5'","wds_bssid_sta":"'$wds_bssid_sta_5'","radar_event":'$radar_event'}'; 
+  
+
+##############################channel survey for 2.4G band ########################
+  channel_survey=',"ch_survey":{}';
+  channel_survey=`get_channel_survey $active_24_radio_name`;
+  channel_survey=',"ch_survey":{'"${channel_survey%?}"'}'; 
+
+  current_ch_util_2g=`wl -i $active_24_radio_name chanim_stats | grep 0x | awk -F " " '{printf "%d",$4+$5+$6;}'`
+ 
+##############################channel survey for 2.4G band - end ######################
+
+##############################neighbors for 2.4G band ########################
+  neighbor_aps=',"nh":[]';
+   if [ $4 -eq 1 ]; then
+     neighbor_aps=`get_neighborhood $active_24_radio_name 24`
+     neighbor_aps=',"nh":['"${neighbor_aps%?}"']';
+   fi
+
+##############################neighbors for 2.4G band - end ########################
+
+
+ ##############################available channels for 2.4G band ########################
+ channels=`get_available_channels $index_2g $active_24_radio_name $4 24`;
+ channels='],"channels":'["${channels%?}"];
+ 
+##############################available channels for 2.4G band - end ####################
+  
+
+   interfaces_24=$interfaces_24$channels;
+   interfaces_24=$interfaces_24$channel_survey;
+   
+   interfaces_24=$interfaces_24$neighbor_aps;
+
+
+##############################channel survey for 5G band ########################
+  channel_survey=',"ch_survey":{}';
+  channel_survey=`get_channel_survey $active_5_radio_name`;
+  channel_survey=',"ch_survey":{'"${channel_survey%?}"'}'; 
+
+  current_ch_util_5g=`wl -i $active_5_radio_name chanim_stats | grep 0x | awk -F " " '{printf "%d",$4+$5+$6;}'`
+
+  
+##############################channel survey for 5G band - end ######################
+
+##############################neighbors for 5G band ########################
+#if current ch is dfs move to nondfs do scan and go back to dfs
+if [ ! -e /tmp/candidates.json ];then
+  
+ if [ $5 -eq 1 -a $channel_5g -lt 149 -a $channel_5g -gt 48 ]; then
+    if [ "1" == "2" ];then
+       check_non_dfs=`wl -i $active_5_radio_name chan_info | grep " 48"`;
+       nondfs_5g=48;
+        if [ -z "$check_non_dfs" ]; then
+            nondfs_5g=161;
+        fi
+        wl -i $active_5_radio_name csa 1 5 "$nondfs_5g"/"$bw_5g"; 
+        sleep 3;
+    fi
+  fi
+fi
+
+dfs_status=`wl dfs_ap_move 2>/dev/null`;
+check_dfs=$?
+not_in_zero_wait=1
+if [ $check_dfs -eq "0" ];then
+        not_in_zero_wait=`wl dfs_ap_move |grep @1|grep "chanspec: none" -c`
+fi
+
+ neighbor_aps=',"nh":[]';
+  if [ $5 -eq 1 ] && [ $channel_5g -lt 49 -o $channel_5g -gt 148 && $not_in_zero_wait -eq 1 ]; then
+    neighbor_aps=`get_neighborhood $active_5_radio_name 5`
+    neighbor_aps=',"nh":['"${neighbor_aps%?}"']';
+  fi
+
+
+##############################neighbors for 5G band - end ########################
+
+##############################available channels for 5G band ############################
+ 
+ channels=`get_available_channels $index_5g $active_5_radio_name $5 5`;
+
+  if [ "1" == "2" ];then
+     if [ $5 -eq 1 -a $channel_5g -lt 149 -a $channel_5g -gt 48 ]; then
+        a=`sh change-channel $active_5_radio_name $channel_5g $bw_5g 2 $channel_5g $bw_5g 2 0 0`; #go back to old dfs channel    
+      fi
+  fi
+
+ channels='],"channels":'["${channels%?}"];
+
+ 
+##############################available channels for 5G band - end #####################
+ 
+
+  interfaces_5=$interfaces_5$channels;
+  interfaces_5=$interfaces_5$channel_survey; 
+ 
+  interfaces_5=$interfaces_5$neighbor_aps;
+  
+
+  interfaces_24=$interfaces_24"},";
+  interfaces_5=$interfaces_5"},";
+  echo $interfaces_24;
+  echo $interfaces_5; 
+  #discover buddies
+  buddies='"buddies":[ ';
+   if [ $6 -eq 1 ];then
+    buddies=$buddies$(discover_buddies $active_24_radio_name "$7" "$8");
+  fi
+  buddies=${buddies%?}'],';
+  echo $buddies;
+  else
+  echo {};
+  fi
+}
+wifichip=`hcfgtool get WIFI.0.SOLUTION`
+###################################AVAILABLE CHANNELS###################################
+get_available_channels(){
+  busy=-1;
+  noise=0;
+  chanim_data="";
+
+   possibleChannels_pom=$possibleChannels_24g;
+  if [ $4 -eq 5 ];then
+    possibleChannels_pom=$possibleChannels_5g;
+  fi
+
+  channel_pom=$(get_current_channel $2)
+	#`wl -i $2 channel | grep "target channel" | awk -F " " '{printf $3}'`;
+	chanim_stats=`wl -i $2 chanim_stats all`
+  for ch in $(wl -i $2 chan_info | awk -F " " '{print $2}'); do
+    if [ $ch -lt 15 -a $4 -eq 5 ] || [ $ch -gt 15 -a $4 -eq 24 ]; then 
+      continue;
+    fi
+
+   is_dfs_pom=0;
+   if [ $channel_pom -gt 48 -a $channel_pom -lt 149 ];then
+    is_dfs_pom=1;
+   fi
+
+	
+	if [  "$wifichip" == "BCM43217" -o "$wifichip" == "BCM43602" ];then
+		if [ -e /tmp/candidates.json -a $4 -eq 5 ]; then
+		  is_ready $2;
+		  busy=0;
+		  noise=0;
+		  b=`printf "%x" $ch`;
+		  if [ $ch -lt 15 ]; then
+			b="0x100$b";
+		  else
+			b="0xd0$b";
+		  fi
+		  
+		  busy=`echo "$chanim_stats" |grep "$b" |awk -F " " '{printf $8}'`;
+		  busy=$((100-$busy));
+		  noise=`echo "$chanim_stats"|grep "$b" | awk -F " " '{printf $13}'`;
+		  
+		  if [ -z "$busy" ];then
+			busy=0;
+			noise=-100;
+		  fi
+
+		  if [ $ch -lt 15 -a "$ch" == "$channel_pom" ];then
+			if [ ! -z "$current_ch_util_2g" ]; then
+			  busy=$current_ch_util_2g;
+			fi
+		  fi
+
+		  if [ $ch -gt 15 -a "$ch" == "$channel_pom" ];then
+			if [ ! -z "$current_ch_util_5g" ]; then
+			  busy=$current_ch_util_5g;
+			fi     
+		  fi
+		fi
+		
+		if [ -e /tmp/candidates24.json -a $4 -eq 24 ]; then
+		#if [ $3 -eq 1 -a $is_dfs_pom -eq 0 ] || [ -e /tmp/candidates.json -a $4 -eq 5 ]; then
+		  is_ready $2;
+		  busy=0;
+		  noise=0;
+		  b=`printf "%x" $ch`;
+		  if [ $ch -lt 15 ]; then
+			b="0x100$b";
+		  else
+			b="0xd0$b";
+		  fi
+		  
+		  busy=`echo "$chanim_stats"|grep "$b"  |awk -F " " '{printf $8}'`;
+		  busy=$((100-$busy));
+		  noise=`echo "$chanim_stats"|grep "$b" | awk -F " " '{printf $13}'`;
+		  
+		  if [ -z "$busy" ];then
+			busy=0;
+			noise=-100;
+		  fi
+
+		  if [ $ch -lt 15 -a "$ch" == "$channel_pom" ];then
+			if [ ! -z "$current_ch_util_2g" ]; then
+			  busy=$current_ch_util_2g;
+			fi
+		  fi
+
+		  if [ $ch -gt 15 -a "$ch" == "$channel_pom" ];then
+			if [ ! -z "$current_ch_util_5g" ]; then
+			  busy=$current_ch_util_5g;
+			fi     
+		  fi
+		fi
+	else
+		if [ $3 -eq 1 -a $is_dfs_pom -eq 0 ] || [ -e /tmp/candidates.json -a $4 -eq 5 ]; then
+		  is_ready $2;
+		  busy=0;
+		  noise=0;
+		  b=`printf "%x" $ch`;
+		  if [ $ch -lt 15 ]; then
+			b="0x100$b";
+		  else
+			b="0xd0$b";
+		  fi
+		  
+		  busy=`echo "$chanim_stats"|grep "$b"  |awk -F " " '{printf $8}'`;
+		  busy=$((100-$busy));
+		  noise=`echo "$chanim_stats"|grep "$b" | awk -F " " '{printf $13}'`;
+		  
+		  if [ -z "$busy" ];then
+			busy=0;
+			noise=-100;
+		  fi
+
+		  if [ $ch -lt 15 -a "$ch" == "$channel_pom" ];then
+			if [ ! -z "$current_ch_util_2g" ]; then
+			  busy=$current_ch_util_2g;
+			fi
+		  fi
+
+		  if [ $ch -gt 15 -a "$ch" == "$channel_pom" ];then
+			if [ ! -z "$current_ch_util_5g" ]; then
+			  busy=$current_ch_util_5g;
+			fi     
+		  fi
+		fi
+	fi
+	
+    
+    radar=0;
+    out_of_service=0;
+    time_elapsed=0;
+    if [ $ch -gt 48 -a $ch -lt 145 ]; then 
+      radar=1;
+      check_radar=`echo $cha_info | grep "Channel $ch" | grep "Out of Service" | awk -F " " '{print $13}'`;
+      if [ ! -z "$check_radar" ]; then
+        out_of_service=1;
+        time_elapsed=$check_radar;
+      fi
+    fi
+    
+    echo '{"ind":'$ch',"dfs":'$radar',"util":'$busy',"knoise":'$noise',"oos":'$out_of_service'},'
+  done
+  
+}
+
+###################################CHANNEL SURVEY DATA###################################
+
+get_channel_survey(){
+if [ $# -eq 1 ]; then
+
+channel_pom=$(get_current_channel $1)
+	#`wl -i $1 channel | grep "target channel" | awk -F " " '{printf $3}'`;
+	mute=0
+	if [ $channel_pom -gt 48 -a $channel_pom -lt 149 ];then
+		dfs_status=`wl -i $1 dfs_status|grep CAC`
+		if [ "$dfs_status" != "" ];then
+				mute=1
+		fi
+	fi
+
+ wl -i $1 chanim_stats | grep 0x | awk -F " " '{
+ printf "\"ch\":%d,\"ch_busy\":-1,\"ch_tx\":-1,\"ch_rx\":-1,\"ch_act\":-1,\"tx\":%d,\"inbss\":%d\,\"obss\":%d,\"nocat\":%d,\"nopkt\":%d,\"doze\":%d,\"txop\":%d\,\"goodtx\":%d,\"badtx\":%d,\"glitch\":%d,\"badplcp\":%d,\"knoise\":%d\,\"idle\":%d,\"ts\":%d,\"mute\":%d ",'$channel_pom',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'$mute'
+ }'
+fi
+}
+
+###################################NEIGHBORS DATA###################################
+
+get_neighborhood(){
+ if [ $# -eq 2 ]; then
+  if [ $2 -eq 5 ]; then
+    if [ -e /tmp/candidates.json ];then
+      return;
+    fi
+  fi
+
+  if [ $2 -eq 24 ]; then
+    if [ -e /tmp/candidates24.json ];then
+      return;
+    fi
+  fi
+
+  for ch in $(wl -i $1 chan_info | awk -F " " '{print $2}'); do
+
+    if [ $ch -lt 15 -a $2 -eq 5 ] || [ $ch -gt 15 -a $2 -eq 24 ]; then 
+      continue;
+    fi 
+
+    is_ready $1;
+    #abort scan in 5g if ch changed to dfs
+    if [ $2 -eq 5 ]; then
+      my_current_channel=$(get_current_channel $1)
+		#`wl -i $1 channel | grep "target channel" | awk -F " " '{printf "%d",$3}'`;
+      if [ $my_current_channel -gt 48 -a $my_current_channel -lt 148 ];then
+        return;
+      fi 
+    fi 
+    
+    wl -i $1 escanresults -t passive -p 250 -c $ch | sed "s/\\\\x//g" | awk -v band="$2" -F " " '
+       BEGIN {OFS=""}
+       
+       /SSID/ {if($1=="SSID:") ssid=substr($2,2,length($2)-2);  if($1=="BSSID:") bssid=$2;}
+       /Mode/ { mode=$2; rssi=$4; snr=$7; noise=$10; beacon_int=$13;}
+       /Chanspec/ { ch_log=$4; width=substr($5,1,3);}
+       /Primary channel/ {channel=$3;
+
+       rssi=rssi+0; 
+       if (((channel<15 && band == 24) || (channel>15 && band == 5 ))) 
+       printf "\{\"bssid\":\"%s\",\"ssid\":\"%s\",\"sig\":%d,\"pr_ch\":%d,\"bw\":%d,\"sec_ch\":%d\},",\
+       bssid,ssid,rssi,channel,width,ch_log}';
+       usleep 15000;
+  done;
+
+ fi
+}
+
+
+###################################STATIONS STATISTICS DATA###################################
+
+get_stations() {
+ for sta in $(wl -i $1 assoclist | awk -F " " '{print $2}'); do
+  wl -i $1 sta_info $sta | awk -F ":" '
+  BEGIN {OFS=""}
+  
+  /STA/ {macAddr= toupper(substr($1,13,14)":"$2":"$3":"$4":"$5":"substr($6,1,2));}
+  /aid/ {aid=$2}
+
+  /in network/ { split($1,b," "); join_seconds=b[3]; }
+  
+  /rx data bytes/ { rx_bytes=$2;}
+  
+  /rx data pkts/ { rx_packets=$2;}
+  
+  /tx total bytes/ { tx_bytes=$2;}
+  
+  /tx total pkts/ { tx_packets=$2;}
+  
+  /tx pkts retries/ { tx_retries=$2;}
+  
+  /rx total pkts retried/ { rx_retries=$2;}
+  
+  /tx failures/ { tx_failed=$2;}
+  
+  /rssi of last/ { split($2,b," ");
+             max_s=-200; 
+             for(k in b) if(b[k]>max_s) max_s=b[k];
+             signal=max_s; }
+  
+  /average rssi/ {split($2,b," ");
+             max_s=-200; 
+             for(k in b) if(b[k]>max_s) max_s=b[k];
+             signal_avg=max_s; }
+  
+  /rate of last tx pkt/ { gsub("kbps","",$2); split($2,a,"-"); tx_bitrate=(a[1]+a[2])/(2*1024);}
+  
+  /rate of last rx pkt/ { gsub("kbps","",$2); rx_bitrate=$2/1024;}
+  
+  /state/ { state=$2;}
+  
+  END {printf "\{\"mac\":\"%s\",\"wds\":0,\"is_11k_cap\":0,\"is_11r_cap\":0,\"is_11v_cap\":0,\"aid\":%d,\"rx_bytes\":\"%s\",\"rx_pack\":\"%s\",\"tx_bytes\":\"%s\",\"tx_pack\":\"%s\",\"tx_retries\":\"%d\",\"tx_failed\":\"%s\",\"rx_retries\":%d,\"signal\":%d,\"signal_avg\":%d,\"tx_bitrate\":%d,\"rx_bitrate\":%d,\"state\":\"%s\",\"join_seconds\":%d\},",\
+macAddr,aid,rx_bytes,rx_packets,tx_bytes,tx_packets,tx_retries,tx_failed,rx_retries,signal,signal_avg,tx_bitrate,rx_bitrate,state,join_seconds 
+ }';
+  
+ done;
+
+#current stations extenders
+for wds_link in $(wl -i $1 wds | awk -F ": " '{print $2}'); do
+  #check if interfaces corresponds
+  pom_in=`echo $1 | awk -F " " '{gsub("wl","",$1); a=$1; if(length($1)==1) a=$1".0"; print a}'`;
+  is_on_me=`wl -i $1 wds | awk -F ":" '{gsub("wds","wl",$1); print $1}'  | grep "$pom_in"`;
+  if [ -z "$is_on_me" ];then
+    continue;
+  fi
+  is_up=`wl -i $1 sta_info $wds_link | grep "WDS_LINKUP"`;
+    if [ ! -z "$is_up" ];then 
+   
+        wl -i $1 sta_info $wds_link | awk -F ":" '
+        BEGIN {OFS=""}
+      
+        /STA/ {macAddr= toupper(substr($1,13,14)":"$2":"$3":"$4":"$5":"substr($6,1,2));}
+        /aid/ {aid=$2}
+      
+        /rx data bytes/ { rx_bytes=$2;}
+      
+        /rx data pkts/ { rx_packets=$2;}
+      
+         /tx total bytes/ { tx_bytes=$2;}
+        
+          /tx total pkts/ { tx_packets=$2;}
+        
+          /tx pkts retries/ { tx_retries=$2;}
+        
+          /rx total pkts retried/ { rx_retries=$2;}
+        
+           /tx failures/ { tx_failed=$2;}
+        
+        /rssi of last/ { split($2,b," ");
+                   max_s=-200; 
+                   for(k in b) if(b[k]>max_s&&b[k]!=0) max_s=b[k];
+                   signal=max_s; }
+        
+        /average rssi/ {split($2,b," ");
+                   max_s=-200; 
+                   for(k in b) if(b[k]>max_s&&b[k]!=0) max_s=b[k];
+                   signal_avg=max_s; }
+        
+        /rate of last tx pkt/ { gsub("kbps","",$2); split($2,a,"-"); tx_bitrate=(a[1]+a[2])/(2*1024);}
+        
+        /rate of last rx pkt/ { gsub("kbps","",$2); rx_bitrate=$2/1024;}
+        
+        /state/ { state=$2;}
+        
+        END {printf "\{\"mac\":\"%s\",\"wds\":1,\"is_11k_cap\":0,\"is_11r_cap\":0,\"is_11v_cap\":0,\"rx_bytes\":\"%s\",\"rx_pack\":\"%s\",\"tx_bytes\":\"%s\",\"tx_pack\":\"%s\",\"tx_retries\":\"%d\",\"tx_failed\":\"%s\",\"rx_retries\":%d,\"signal\":%d,\"signal_avg\":%d,\"tx_bitrate\":%d,\"rx_bitrate\":%d,\"state\":\"%s\"\},",\
+      macAddr,rx_bytes,rx_packets,tx_bytes,tx_packets,tx_retries,tx_failed,rx_retries,signal,signal_avg,tx_bitrate,rx_bitrate,state  
+       }';
+    fi
+done;
+ 
+}
+
+
+
+###################################CHECK IF IT IS UP###################################
+is_ready(){
+ 
+ a=`wl -i $1 isup`;
+ wait_time=2;
+ time_connection=$( date +%s);
+ start_time=$( date +%s);
+ until [ "$a" == "1" -o  $time_connection -gt $wait_time ];
+   do
+    time_connection=$( date +%s);
+    time_connection=$((time_connection - start_time)); 
+    a=`wl -i $1 isup`; 
+done;
+
+}
+
+
+###################################DISCOVER BUDDIES###################################
+discover_buddies(){
+   if [ $# -eq 3 ];then
+    
+    usleep 10000;   
+    if [ ! -z "$1" ]; then
+      
+      wl -i $1 escanresults -t passive -p 100  -c $2  | sed "s/\\\\x//g" | awk -v band="24" -v ssids="$3" -F " " '
+         BEGIN {OFS=""}        
+         /SSID/ {if($1=="SSID:") ssid=substr($2,2,length($2)-2);  if($1=="BSSID:") bssid=$2;}
+         /Mode/ { rssi=$4;}
+         /Primary channel/ {channel=$3;
+         rssi=rssi+0; 
+         if (channel<15 && band == 24 && index(ssids,ssid)>0) 
+         printf "\{\"bssid\":\"%s\",\"sig\":%d,\"ch\":%d\},",bssid,rssi,channel}';
+    fi
+   fi
+  
+
+}
+
+get_radar_event(){
+
+radar_status=`wl radar_status`;
+#radar_status=`cat /flash/radar_status`;
+
+channel_bw=`echo $radar_status|awk '/ON CHAN/ {print $8}'`;
+
+if [ -n "$channel_bw" ]; then
+    radar_channel=`echo $channel_bw|awk -F "/" '{print $1;}'`
+    radar_bw=`echo $channel_bw|awk -F "/" '{print $2;}'`
+else
+    radar_channel=0
+    radar_bw=0
+fi
+
+time_line=`echo $radar_status|awk -F "Time from last detection" '{print substr($2,1,5);}'`;
+if [ -n "$time_line" ]; then
+
+    time=`echo $time_line |awk -F "[=,]+" '{print $2;}'`
+
+else
+
+   time=0
+
+fi
+
+json_file='{
+"channel": '$radar_channel',
+"bw": '$radar_bw',
+"time": '$time'
+}';
+
+echo $json_file
+}
+
+###################################MAIN PROGRAM###################################
+if [ $# -eq 8 ]; then 
+  my_ip_addr=`ifconfig br0 | grep "inet addr" | awk -F " " '{print substr($2,6,length($2))}'`;
+  my_mac_addr=`ifconfig br0 | grep "HWaddr"  | awk -F " " '{print $5}'`;
+  if [ $WORK_ROLE ]; then
+	if [ x"$WORK_ROLE" == x"Controller" ]; then
+		is_extender=0;
+	else
+		is_extender=1;
+	fi
+  else
+	is_extender=`cfgcli -g InternetGatewayDevice.X_ALU-COM_Wifi.WorkRole | awk -F "=" '{if($2=="Controller") print 0; else print 1;}'`;
+  fi
+ 
+  gateway="";
+  if [ -e /etc/net.conf -a "$is_extender" == "1" ]; then
+    gateway=`cat /etc/net.conf | grep gateway  | awk -F "=" '{print $2}'`;
+  fi
+ 
+  if [ -z "${gateway// }" ]; then
+    gateway=`ifconfig br0 | grep "inet addr" | awk -F " " '{print $2}' | awk -F ":" '{print $2}'`;
+  fi
+  
+  
+  bh_type=1; #1 for wired, 0 other, 2-5g,3-24
+  if [ "$is_extender" == "1" ];then
+    bh_type=0;
+  fi
+  interfaces=$(get_interfaces $1 $2 $3 $4 $5 $6 "$7" "$8");
+ 
+  interfaces=${interfaces%?};
+
+ 
+  json='{"request_type":0,"chipset":2,"ts":'$( date +%s)',"bh_type":'$bh_type',"ip_addr":"'$my_ip_addr'","mac_addr":"'$my_mac_addr'","is_ext":'$is_extender','$interfaces"}";
+ 
+ echo $json;
+
+  [ "$is_extender" == "0" ] && /usr/exe/whw/bin/check_current_channel > /dev/null # channel switch monitor performed on RGW only, xinzhen
+  
+
+else
+ echo "Please specify all paramters: radio_data neighbor_scan_24g neighbor_scan_5g channel_survey_24g channel_survey_5g buddies_discovery target_channels target_ssids!";
+fi
+

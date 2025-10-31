@@ -1,0 +1,9 @@
+#!/bin/sh
+
+grep /dev/spi_adpt /proc/devices && exit 0
+ 
+echo "insmod spi_adpt ... "
+insmod $KER_MOD_DIR/spi_adpt.ko
+SPI_ADPT_MAJOY=$(grep /dev/spi_adpt /proc/devices|cut -c-3)
+mknod -m 644 /dev/spi_adpt c $SPI_ADPT_MAJOY 0
+

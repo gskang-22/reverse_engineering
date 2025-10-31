@@ -1,0 +1,621 @@
+<html>
+<%include ( "html/head.html" ) %>
+<head>
+<title><%T("GPON Home Gateway")%></title>
+
+<meta http-equiv="Content-Type" content="text/html ;charset=utf-8"/>
+<link href="common/css_stc/ont.css?v=<%software_version%>" type="text/css" rel="stylesheet" / >
+<link href="common/css_stc/main.css?v=<%software_version%>" type="text/css" rel="stylesheet" / >
+<style type="text/css">
+body{
+     text-align:left;
+}
+
+.x_cur_main_menu img, .x_main_menu img {
+	width: 20px;
+}
+
+.x_cur_main_menu a, .x_main_menu a {
+	cursor: pointer;
+	text-decoration: none;
+	font-weight: bold;
+	margin-left: 5px;
+	font-size: 14px;
+	font-family: calibri, serif, fixedsys;
+}
+li.x_main_menu {
+	border-right-style:solid;
+        border-right-width:1px;
+        border-right-color:#A3A3A3;
+}
+li.x_cur_main_menu {
+
+        background-color: #FFFFFF;
+	color: #000000;
+	font-weight: bold;
+	border-left-style:solid;
+        border-left-width:1px;
+        border-left-color:#A3A3A3;
+	border-bottom-style:solid;
+        border-bottom-width:1px;
+        border-bottom-color:#A3A3A3;
+	border-top-style:solid;
+        border-top-width:1px;
+        border-top-color:#A3A3A3;
+
+}
+.x_main_menu a:link {color: #000000;}
+.x_main_menu a:visited {color:#000000;}
+.x_main_menu a:active {color: #000000;}
+.x_main_menu a:hover {color: #000000;}
+
+.x_cur_main_menu a:link {color: #000000;}
+.x_cur_main_menu a:visited {color: #000000;}
+.x_cur_main_menu a:active {color: #000000;}
+.x_cur_main_menu a:hover {color: #000000;}
+
+
+.x_sub_menu a:link {color: #000000;}
+.x_sub_menu a:visited {color: #000000;}
+.x_sub_menu a:active {color: #000000;}
+.x_sub_menu a:hover {color: #000000;}
+
+.x_cur_sub_menu a:link {color: #000000;}
+.x_cur_sub_menu a:visited {color: #000000;}
+.x_cur_sub_menu a:active {color: #000000;}
+.x_cur_sub_menu a:hover {color: #000000;}
+
+#xchs a:link {color: #000000;}
+#xchs a:visited {color: #000000;}
+#xchs a:active {color: #000000;}
+#xchs a:hover {color: #000000;}
+
+#xspa a:link {color: #000000;}
+#xspa a:visited {color: #000000;}
+#xspa a:active {color: #000000;}
+#xspa a:hover {color: #000000;}
+
+.x_sub_menu a {
+	text-decoration: none;
+	font-size: 13px;
+	font-family: calibri, serif, fixedsys;
+	margin-left: 15px;
+}
+li.x_sub_menu {
+        background-color: #F0F0F0;
+	font-weight: normal;
+	border-bottom-style:solid;
+        border-bottom-width:1px;
+        border-bottom-color:#D8D8D8;
+	line-height: 23px;
+	border-right-style:solid;
+        border-right-width:1px;
+        border-right-color:#A3A3A3;
+}
+
+.x_cur_sub_menu a{
+	text-decoration: none;
+	font-size: 13px;
+	font-family: calibri, serif, fixedsys;
+	margin-left: 15px;
+}
+
+
+ li.x_cur_sub_menu {
+
+	background-color: #ffffff;
+	border-bottom-style:solid;
+        border-bottom-width:1px;
+        border-bottom-color:#A3A3A3;
+	line-height: 23px;
+	border-right-style:solid;
+        border-right-width:1px;
+        border-right-color:#A3A3A3;
+
+}
+.gpon_table {
+	background-color: #4D0068;
+	-webkit-appearance: none;
+        -moz-border-radius: 7px;
+        -webkit-border-radius:7px;
+        border-radius:7px;
+	width:785px;
+	height:40px;
+}
+
+.gpon_table tr {
+        height: 40px;
+        vertical-align: middle;
+}
+.gpon_table td {
+	color: #FFFFFF;
+	font-size:18px;
+	font-weight:bold;
+	vertical-align: middle;
+	text-align:left;
+}
+
+
+
+#div_logo {
+	height: 90px;
+	width: 1200px;
+	font-size: 2px;
+	font-family: verdana, serif, fixedsys;
+	text-align: left;
+	margin: 0px;
+}
+#div_logo1 {
+	width: 208px;
+	background: url(/common/img/logoback_stc.gif) repeat-x center;
+}
+#div_logo3 {
+	width: 793px;
+}
+#div_logo5 {
+        width: 88px;
+	margin: 0px;
+}
+#div_pad {
+	width: 684px;
+	height: 20px;
+}
+#div_pad2 {
+        width: 88px;
+        height: 20px;
+}
+#div_logo1, #div_logo2,#div_logo4,#div_logo5 {
+	float: left;
+	height: 68px;
+}
+#div_logo3 {
+	height:37px;
+	float: left;
+}
+#div_title {
+	width: 610px;
+	font-size: 18px;
+}
+#div_logout {
+	width: 88px;
+	font-size: 16px;
+	font-weight: bold;
+	font-family: calibri, serif, fixedsys;
+}
+
+#div_chs {
+	width: 43px;
+}
+#div_spa{
+	width: 43px;
+}
+#div_chs,#div_spa{
+        float: left;
+        font-size: 14px;
+	height: 58px;
+	vertical-align: bottom;
+}
+#div_title, #div_logout{
+	float: left;
+	height: 58px;
+	vertical-align: middle;
+}
+#xlogo {
+	height: 68px;
+	line-height: 68px;
+	text-align: center;
+}
+
+#xlogo img {
+	margin-top: 8px;
+}
+
+#xtitle {
+	height: 58px;
+	line-height: 58px;
+	margin-left: 50px;
+	text-align: left;
+}
+#xlogout {
+	height: 58px;
+	margin-right: 10px;
+}
+
+#xlogout a {
+	text-decoration: none;
+}
+
+#div_path {
+	width: 50px;
+	height: 30px;
+	line-height: 30px;
+	font-size: 12px;
+	color: #000000;
+	font-weight: bold;
+	font-family: verdana, serif, fixedsys;
+}
+
+#div_img {
+	width: 785px;
+	height: 4px;
+	border-bottom-style:solid;
+        border-bottom-width:1px;
+        border-bottom-color:#A3A3A3;
+}
+
+#div_left{
+	width: 208px;
+	text-align: left;
+	background-color: #ffffff;
+}
+
+#div_margin{
+	width:6px;
+	background-color:#ffffff;
+}
+
+#div_content_left {
+	margin: 0px;
+	padding: 0px;
+	width: 208px;
+	border-top-style:solid;
+        border-top-width:1px;
+        border-top-color:#A3A3A3;
+	border-bottom-style:solid;
+        border-bottom-width:1px;
+        border-bottom-color:#A3A3A3;
+}
+
+#div_menu_left {
+	width: 208px;
+	text-align: left;
+	background-color: #F0F0F0;
+	line-height: 30px;
+}
+
+#xtitle_top {
+	text-align: left;
+}
+
+
+</style>
+<script src="js_glb/jquery-1.6.1.min.js" charset="UTF-8"></script>
+<!--<script src="js/menu.js" charset="GB2312"></script>-->
+<script src="menu.cgi"></script>
+<script language="javascript" type="text/javascript">
+
+var ppp_conns=[<% ppp_conns %>];
+var onutype='<% onu_type %>';
+<% opid = ri("OperatorID") ;%>
+
+<% if opid == "VIET" then %>
+	var url=window.location.href;
+	if (url.indexOf("https") < 0) {
+		url = url.replace("http:", "https:");
+		window.location.replace(url);
+	}
+<% end %>
+
+function CheckExpire()
+{
+	$.ajax({
+ 		type:'POST',
+		url:'/check_expire.cgi',
+		data:'',
+		dataType:"json"
+	})
+	.done(function(exp){
+		if(exp.expired != "no")
+		{
+				<% if opid == "SIGH" then %>
+					url = "/login.cgi?out";
+					window.location.replace(url);
+				<%else%>
+					window.location.reload();
+				<%end%>
+		}
+	})
+}
+
+$(function(){
+if (<%self_test%> == 1)
+	{
+		$(document.body).hide();
+		alert("link is down. please login to show the details.");
+		$(document.body).show();
+	}
+ var ppp_conn = false;
+ $.each(ppp_conns, function(idx, obj){ 
+   if(!idx) {
+   $.each(obj, function(key, value){
+        ppp_conn=true;
+        if(key == "ConnectionStatus") {
+          $("#wan_status_value1").text(value);
+        }else if(key == "Name"){
+          $("#wan_status_value2").text(value);
+        } else if(key == "LastConnectionError") {
+          $("#wan_status_value3").text(value);
+        }
+    });
+    return false;
+   }
+ });
+
+ if(ppp_conn && onutype=='HGU') {
+	var wan_state = $("#wan_status_value1").text();
+   	var wan_err = $("#wan_status_value3").text();
+     	if(wan_state=="Connecting" || wan_state=="Disconnected") {
+            $("#wan_status_value1").html({'Connecting':'<%t("Connecting")%>',
+                'Disconnected':'<%t("Disconnected")%>',
+                'Connected':'<%t("Connected")%>',
+                'Unconfigured':'<%t("Unconfigured")%>'
+	    }[wan_state]);
+            if(wan_err=="ERROR_ACCOUNT_DISABLED" || wan_err=="ERROR_ACCOUNT_EXPIRED" ||
+        	wan_err=="ERROR_PASSWORD_EXPIRED" || wan_err=="ERROR_AUTHENTICATION_FAILURE" ||
+                wan_err=="ERROR_ISP_TIME_OUT" || wan_err=="ERROR_ISP_DISCONNECT" ||
+                wan_err=="ERROR_SERVER_OUT_OF_RESOURCES" || wan_err=="ERROR_RESTRICTED_LOGON_HOURS" ||
+                wan_err=="ERROR_FORCED_DISCONNECT" || wan_err=="ERROR_USER_DISCONNECT" ||
+                wan_err=="ERROR_IDLE_DISCONNECT") {
+		$("#div_menu_wan_status").show();
+		$("#wan_status_value3").html({'ERROR_ISP_TIME_OUT':'<%t("ISP TIME OUT")%>',
+                    'ERROR_ISP_DISCONNECT':'<%t("ISP DISCONNECT")%>',
+                    'ERROR_SERVER_OUT_OF_RESOURCES':'<%t("SERVER OUT OF RESOURCES")%>',
+                    'ERROR_RESTRICTED_LOGON_HOURS':'<%t("RESTRICTED LOGON HOURS")%>',
+                    'ERROR_ACCOUNT_DISABLED':'<%t("ACCOUNT DISABLED")%>',
+                    'ERROR_ACCOUNT_EXPIRED':'<%t("ACCOUNT EXPIRED")%>',
+                    'ERROR_PASSWORD_EXPIRED':'<%t("PASSWORD EXPIRED")%>',
+                    'ERROR_AUTHENTICATION_FAILURE':'<%t("AUTHENTICATION FAILURE")%>',
+                    'ERROR_FORCED_DISCONNECT':'<%t("FORCED DISCONNECT")%>',
+                    'ERROR_USER_DISCONNECT':'<%t("USER DISCONNECT")%>',
+                    'ERROR_IDLE_DISCONNECT':'<%t("IDLE DISCONNECT")%>'        
+		}[wan_err]);
+	    } else {
+		$("#div_menu_wan_status").hide();
+            }
+        } else {
+            $("#div_menu_wan_status").hide();
+        }
+ } else {
+    $("#div_menu_wan_status").hide();
+ }
+
+	LoadTopMenu();
+	if(<%self_test%>){
+        document.cookie="autoSelfTest=on; path=/"
+        $("#div_menu_left ul li").eq(4).click();
+    }else
+        $("#div_menu_left ul li").eq(0).click();
+
+	setInterval("CheckExpire();", 10000);
+
+    <% if is_wifi_password_hint_pop_up then %>
+		<% if !pwd_pmpted then %>
+	       setTimeout(function(){alert("<%T("It is recommended for security improvement in your Internet connection")%>");}, 850);
+	    <% end %>
+	<% end %>
+})
+
+ function LoadTopMenu(){
+
+        for (index in all_nodes.nodes){
+
+                    if (all_nodes.nodes[index].nodes.length > 0) {
+	       var img = "open.gif";
+	       var t_menu=$("<ul class='x_main_menu'><li class='x_main_menu' ><a href='#'><img  src='img_glb/"+ img + "'>"+all_nodes.nodes[index].name +"</a></li></ul>")
+
+	       $("#div_menu_left ").append(t_menu);
+   
+	        t_menu.click(new function(){
+
+                      $("#div_content_left ul").eq(index).click(function(){
+
+				$(this).each(function(index,v){
+					
+					$(v).find("li").eq(0).attr("class",'x_cur_main_menu');
+					$(v).find("li").slice(1).remove();
+
+				})
+
+				$(this).siblings().each(function(index,v){
+
+				 var top=$(v).find("li").eq(0);
+				 
+				       $(v).find("li").eq(0).attr("class",'x_main_menu');
+					
+					$(v).find("li").slice(1).hide();
+
+					$("img",top).attr("src", 'img_glb/open.gif');
+					
+				})		  
+	       })
+
+			var t_submenu=t_menu;			
+ 			var node=all_nodes.nodes[index];
+
+		       return function(){
+				   	
+			    return SelectSubMenu(node,t_submenu);
+						 
+			}
+	      });
+                    }
+ 	}
+}
+
+
+    function SelectSubMenu(node,t_sub){
+
+
+	var nodes = node.nodes;
+	var mt =node.name;
+	var c_img = 'img_glb/close.gif';
+
+	$("img",t_sub).attr("src",c_img);
+
+        for (index in nodes){
+	  	
+	        var l_submenu=$("<li class='x_sub_menu' ><a href='#'  target='mainFrame'>"+nodes[index].name +"</a></li>")
+
+	        t_sub.append(l_submenu);
+
+                l_submenu.click(new function(){
+
+                var node=nodes[index];
+ 	         var sub=l_submenu;	
+
+                 return function(){
+
+                    if(typeof(node.target)=="string"){
+						
+				var st =node.name;
+				var title_top = mt + "&gt;" +st;
+
+				$("#xtitle_top").html(title_top);	
+
+				sub.attr("class",'x_cur_sub_menu');
+
+				sub.siblings().slice(1).attr("class",'x_sub_menu');
+
+				GoToUrl(node.target);
+                    }
+
+                    return false;
+
+                }
+
+            })
+
+
+	      $("a",l_submenu).attr("href",nodes[index].target);
+		  
+        }
+
+
+        if(typeof(node.target)=="number" && node.target<nodes.length){
+
+          $("li",t_sub).eq((node.target)+1).click();
+		  
+        }
+	else if(typeof(node.target)=="string"){
+
+            GoToUrl(node.target);
+
+        }
+		 return false;
+
+    }
+
+	function GoToUrl(url){
+	<!-- Clear the session storage when the pages are navigated -->
+	    if(url == "us_classifier.cgi") {
+		sessionStorage.removeItem("policy_state");
+		sessionStorage.removeItem("classifier_state");
+		sessionStorage.removeItem("rules_state");
+	    }
+
+	    $(window).scrollTop(0);
+		$("iframe[name='mainFrame']").attr("src",url)
+	}
+
+	function OnLogout()
+	{
+		top.location.href = "/reg.html";
+	}
+
+	function refresh()
+	{
+		window.location.reload();
+	}
+
+</script>
+<!--[if lt IE 9]>
+            <script src="/common/js/html5shiv.min.js"></script>
+            <script src="/common/js/html5shiv-printshiv.min.js"></script>
+            <script src="/common/js/respond.min.js"></script>
+             <script>
+                alert("<%T("Please use Internet Explorer 10 or higher or use Chrome/Firefox to browse the intranet to get the best viewing")%>");
+            </script>
+<![endif]-->
+
+</head>
+<Body  style="overflow: scroll">
+<div id="wrap">
+ <div class="html_body">
+<div id="div_logo">
+<div id="div_logo1">
+<%  opid = ri("OperatorID"); %>
+<ul><li id="xlogo"><a href="http://www.stc.com.sa/" target="_blank"><img  src="common/img/stc.gif" /></a></li></ul>
+</div>
+
+<div id="div_logo3">	
+	<div id="div_pad"></div>
+	<div id="div_top">
+	<table class="gpon_table" align="left">
+	  <tr>
+		<td>&nbsp;&nbsp;&nbsp;<%T("GPON Home Gateway")%></td>
+	  </tr>
+	</table>
+    </div>
+</div>
+<div id="div_logo5">
+	<div id="div_pad2"></div>
+		<div id="div_logout"><ul><li id="xlogout"><input type="button" onclick="location.href='login.cgi?out'" style="width: 120px;height: 40px;background-color: #FF1975;color: #FFFFFF;font-size: 16px;font-weight: bold;-webkit-appearance: none;-moz-border-radius: 7px;-webkit-border-radius: 7px;border-radius: 7px;" value="<%T("Logout")%>" /></a></li></ul></div>
+</div>
+
+
+</div>
+<table width="1150">
+  <tr>
+    <td  id="div_left"></td>
+    <td  id="div_margin"></td>
+    <td ><table align=left>
+      <tr id="div_path">
+       <td id="xtitle_top"></td>
+      </tr>
+     <tr > 
+        <td id="div_img"></td> 
+      </tr> </table>
+    </td>
+  </tr>
+</table>
+ <section class="ont-inner-wrap"> 
+          <div class="ont-navigation">
+	           <div  id="div_content_left" >
+	           <div id="div_menu_left"></div>
+		<%  opid = ri("OperatorID"); %>
+        	<% if opid == "VIET" then %>
+        	<% else %>
+        		<% if opid == "BTGF" then %>
+        		<% else %>
+        			<% if opid == "XDSL" then %>
+        			<%else%>
+					<div id="div_menu_wan_status">
+						<div id="wan_status_text1"> <p><%T("WAN Connection ID")%> : <span style="display:block;word-break:break-all;word-wrap:break-word" id="wan_status_value2"> NULL </span></p> </div>
+                        <div id="wan_status_text2"> <p><%T("WAN Status")%> : <span style="display:block;word-break:break-all;word-wrap:break-word" id="wan_status_value1"> NULL </span></p> </div>
+                        <div id="wan_status_text3"> <p><%T("WAN Failure")%> : <span style="display:block;word-break:break-all;word-wrap:break-word" id="wan_status_value3"> NULL </span></p> </div>
+					<input type="button" style="width: 80px; position: relative; left: 50px; bottom: 2px;" value="<%T("Refresh")%>" onclick="refresh();" />
+					</div>
+					<%end%>
+				<%end%>
+			<%end%>
+		</div>
+            </div>
+            <div class ="article" id="internet">
+                <div class="ont-content">
+                        <!-- 16:9 aspect ratio -->
+                            <iframe  id="mainFrame" name="mainFrame" style="overflow: auto;width:100%;height: 550px"   frameborder="0"></iframe>
+                       
+                           
+                </div>
+            </div>
+       </section>   
+
+
+    <div class="push"></div>
+    </div>
+    <div class="footer" style="font-size:10px;">
+        Copyright STC 2013. All rights reserved
+    </div>
+</div>
+</Body>
+</html>

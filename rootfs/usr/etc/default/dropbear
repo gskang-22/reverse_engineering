@@ -1,0 +1,2 @@
+# Set to zero if you don't start Dropbear from inetd
+NO_START=1

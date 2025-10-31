@@ -1,0 +1,12 @@
+#### /etc/etcfile configuration file for non-storage, per line per item
+## configuration line formart: <link_path @ /etc/> : <link_source @ /usr/>
+# ------------------------------------------------------------------------------
+/etc/buildinfo:/usr/etc/buildinfo
+/etc/datamodel.xml:/usr/etc/datamodel.xml
+/etc/default:/usr/etc/default
+/etc/filesystems:/proc/filesystems
+/etc/mounts:/proc/mounts
+/etc/openssl:/usr/etc/openssl
+/etc/preconfiguration_global.xml:/usr/etc/preconfiguration_global.xml
+/etc/scripts:/usr/etc/scripts
+/etc/services:/usr/etc/services
