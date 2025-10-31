@@ -37,8 +37,41 @@ def my_gen_varlen_vtyshpw_enter(ql: Qiling):
 # decode the call arguments and then print them
 def my_gen_varlen_vtyshpw_exit(ql: Qiling):
     print("debug4")
-    params = ql.os.resolve_fcall_params({'serial': PARAM_PTRX, 'serial_len': STRING, 'dst_len': PARAM_INT32, 'dst': PARAM_PTRX })
+    # resolve params as pointers/ints
+    params = ql.os.resolve_fcall_params({
+        'serial': PARAM_PTRX, 
+        'serial_len': STRING, 
+        'dst_len': PARAM_INT32, 
+        'dst': PARAM_PTRX })
     print(params)
+
+    dst = params.get('dst')
+    dst_len = params.get('dst_len')
+
+    if not dst:
+        print("no dst pointer")
+        return
+
+    # try the easiest: NUL-terminated C string
+    try:
+        pw = ql.mem.string(dst)
+        print("password:", pw)
+        return
+    except Exception:
+        pass
+
+    # fallback: read dst_len bytes if it's a sensible integer, otherwise read up to 256 bytes
+    try:
+        # be defensive about dst_len type
+        if isinstance(dst_len, int) and 0 < dst_len <= 4096:
+            n = dst_len
+        else:
+            n = 256
+        raw = ql.mem.read(dst, n)
+        s = raw.split(b'\x00', 1)[0].decode('utf-8', errors='replace')
+        print("password (fallback read):", s)
+    except Exception as e:
+        print("failed to read password from memory:", e)
 
 if __name__ == "__main__":
     # set up command line argv and emulated os root path
@@ -48,7 +81,7 @@ if __name__ == "__main__":
     argv = r'rootfs/usr/sbin/vtysh -c'.split()  # relative to rootfs, not host path
 
     # creating Qiling
-    ql = Qiling(argv, rootfs, multithread=True, verbose=QL_VERBOSE.DEBUG)
+    ql = Qiling(argv, rootfs, multithread=True, verbose=QL_VERBOSE.DEFAULT)
 
     # Hook a specific open call to begin jump to target function
     ql.os.set_syscall('open', hook_open, QL_INTERCEPT.EXIT)
